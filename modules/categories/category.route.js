@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {createCategory,deleteCategoryById,getCetgoryById,getAllCategory,updateCategoryById,updateCategoryStatusById} = require('./category.controller');
+const {createCategory,deleteCategoryById,getCategoryById,getAllCategory,updateCategoryById,updateCategoryStatusById} = require('./category.controller');
 
 const authMiddleware = require('../../middlewares/auth.middleware');
 const roleMiddleware = require('../../middlewares/role.middleware');
@@ -9,7 +9,7 @@ const roleMiddleware = require('../../middlewares/role.middleware');
 router.post('/',authMiddleware,roleMiddleware('ADMIN'),createCategory);
 router.get("/", getAllCategory);
 
-router.get("/:id", getCetgoryById);
+router.get("/:id", getCategoryById);
 
 router.patch(
   "/:id",

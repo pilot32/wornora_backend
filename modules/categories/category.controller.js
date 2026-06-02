@@ -37,7 +37,7 @@ const createCategory = async(req,res)=>{
     
 }
 
-const getCetgoryById = async (req,res)=>{
+const getCategoryById = async (req,res)=>{
     try{
         const {id} = req.body;
         const category = await Category.findById(req.params.id);
@@ -182,7 +182,7 @@ const updateCategoryStatusById = async(req,res)=>{
 };
 module.exports= {
     createCategory,
-    getCetgoryById,
+    getCategoryById,
     getAllCategory,
     deleteCategoryById,
     updateCategoryById,

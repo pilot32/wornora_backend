@@ -7,3 +7,4 @@
   "email": "akshat@test.com",
   "password": "123456"
 }
+admintoken="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTFkYzYwMmMxYTk0ZTRmNjE0YmQzMmMiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3ODA0MTI5NTksImV4cCI6MTc4MTAxNzc1OX0.EDm9cok1bY7bYIpWUIwcvxGvFiLKFCxl14L8m0tiSVc"

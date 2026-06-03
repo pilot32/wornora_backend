@@ -1,8 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const {createProduct} = require('./products.controller');
 const authMiddleware = require('../../middlewares/auth.middleware');
 const roleMiddleware = require('../../middlewares/role.middleware');
+const {
+    createProduct,
+    getAllProducts,
+    getProductById,
+    updateProductById,
+    updateProductStatusById,
+} = require('./products.controller');
 
 
 router.post('/',
@@ -10,4 +16,26 @@ router.post('/',
     roleMiddleware('ADMIN'),
     createProduct
 );
+router.get(
+    '/',
+    getAllProducts
+);
+router.get(
+    "/:id",
+    getProductById
+);
+router.patch(
+    "/:id",
+    authMiddleware,
+    roleMiddleware("ADMIN"),
+    updateProductById,
+);
+router.patch(
+    "/:id/status",
+    authMiddleware,
+    roleMiddleware("ADMIN"),
+    updateProductStatusById,
+    
+);
+
 module.exports=router;

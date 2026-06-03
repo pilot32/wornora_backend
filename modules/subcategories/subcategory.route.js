@@ -2,7 +2,14 @@ const express = require('express');
 const authMiddleware = require('../../middlewares/auth.middleware');
 const roleMiddleware = require('../../middlewares/role.middleware');
 const router = express.Router();
-const {createSubCategory,getAllSubCategories,getSubCategoriesById,updateStatusSubCategoryById,deleteSubCategoryById,updateSubCategoryById} = require('./subcategory.controller')
+const {
+    createSubCategory,
+    getAllSubCategories,
+    getSubCategoriesById,
+    updateStatusSubCategoryById,
+    deleteSubCategoryById,
+    updateSubCategoryById
+    } = require('./subcategory.controller')
 
 router.post(
     "/",

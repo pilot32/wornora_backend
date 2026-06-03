@@ -8,3 +8,19 @@
   "password": "123456"
 }
 admintoken="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTFkYzYwMmMxYTk0ZTRmNjE0YmQzMmMiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3ODA0MTI5NTksImV4cCI6MTc4MTAxNzc1OX0.EDm9cok1bY7bYIpWUIwcvxGvFiLKFCxl14L8m0tiSVc"
+
+testing for product route 
+{
+    "name": "Red Bridal Lehenga",
+    "description": "Heavy embroidered bridal lehenga",
+    "categoryId": "YOUR_CATEGORY_ID",
+    "subcategoryId": "YOUR_SUBCATEGORY_ID",
+    "price": 7999,
+    "discountedPrice": 6999,
+    "stock": 10,
+    "featured": true,
+    "images": [
+        "image1.jpg",
+        "image2.jpg"
+    ]
+}

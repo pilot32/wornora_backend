@@ -24,7 +24,12 @@ router.delete(
   roleMiddleware("ADMIN"),
   deleteCategoryById
 );
-router.patch("/:id/status", updateCategoryStatusById);
+router.patch(
+  "/:id/status",
+  authMiddleware,
+  roleMiddleware("ADMIN"),
+  updateCategoryStatusById
+);
 
 
 

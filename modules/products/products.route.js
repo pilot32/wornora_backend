@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../../middlewares/auth.middleware');
 const roleMiddleware = require('../../middlewares/role.middleware');
+const upload = require('../../middlewares/upload.middleware');
 const {
     createProduct,
     getAllProducts,
@@ -9,7 +10,9 @@ const {
     updateProductById,
     updateProductStatusById,
 } = require('./products.controller');
-
+const {
+    uploadImages
+} = require('./upload.controller');
 
 router.post('/',
     authMiddleware,
@@ -37,5 +40,12 @@ router.patch(
     updateProductStatusById,
     
 );
-
+//rote to upload uploadImages
+router.post(
+    '/upload',
+    authMiddleware,
+    roleMiddleware('ADMIN'),
+    upload.array('images',5),
+    uploadImages
+)
 module.exports=router;

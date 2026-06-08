@@ -1,27 +1,39 @@
 const cloudinary = require('../../config/cloudinary.config');
 
-
-const uploadImages = async(req,res)=>{
+const uploadImage = async (req, res) => {
     try {
-        const files = req.files;
-    const uploadedImages = [];
-    for(const file of files){
-        const result = await cloudinary.uploader.upload(
-            `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
-            {
-                folder: 'wornore/products'
-            }
-        );
-        uploadedImages.push(
-            result.secure_url
-        );
-        return res.status(200).json({'message':'photo uploaded succesfull',result});
+
+        if (!req.file) {
+            return res.status(400).json({
+                message: 'No file uploaded'
+            });
+        }
+
+        const fileString =
+            `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+
+        const result =
+            await cloudinary.uploader.upload(
+                fileString,
+                {
+                    folder: 'wornora/products'
+                }
+            );
+
+        return res.status(200).json({
+            message: 'photo uploaded successfully',
+            result
+        });
+
+    } catch (err) {
+
+        return res.status(500).json({
+            message: err.message
+        });
+
     }
-    } catch (e) {
-        res.status(500).json({message:e.message});
-    }
-}
-module.exports =
-{
-    uploadImages
-}
+};
+
+module.exports = {
+    uploadImage
+};

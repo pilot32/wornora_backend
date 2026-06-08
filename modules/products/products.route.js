@@ -11,7 +11,7 @@ const {
     updateProductStatusById,
 } = require('./products.controller');
 const {
-    uploadImages
+    uploadImage
 } = require('./upload.controller');
 
 router.post('/',
@@ -43,9 +43,7 @@ router.patch(
 //rote to upload uploadImages
 router.post(
     '/upload',
-    authMiddleware,
-    roleMiddleware('ADMIN'),
-    upload.array('images',5),
-    uploadImages
-)
+    upload.single('image'),
+    uploadImage
+);
 module.exports=router;

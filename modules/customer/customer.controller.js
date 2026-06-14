@@ -29,7 +29,7 @@ const getAllProducts = async (req,res)=>{
             res.status(200).json({products});
     }
     catch(err){
-        res.status(500),json({message:err.message});
+        res.status(500).json({message:err.message});
     }
 }
 /**
@@ -75,7 +75,7 @@ const getNewArrivals = async(req,res)=>{
 const getProductById = async(req,res)=>{
     try{
         const product = await Product.findOne({
-        id: req.params.id,
+        _id: req.params.id,
         isActive:true
     })
     .populate('categoryId','name')
@@ -96,17 +96,44 @@ const getProductById = async(req,res)=>{
  * MVP-no regex just simple search and lookup in DB.
  */
 const getProductBySearch = async (req,res) => {
-    const{
+    try{
+        const{
         categoryId,
         subcategoryId,
         search,
     }=req.query;
+    const filter = {
+        isActive: true
+    }
+    if(categoryId){
+        filter.categoryId=categoryId;
+    }
+    if(subcategoryId){
+        filter.subcategoryId=subcategoryId;
+    }
+    if(search){
+        filter.name = {
+            $regex: search,
+            $options: 'i',
+        };
+    }
+    const products = await Product.find(filter)
+    .populate('categoryId','name')
+    .populate('subcategoryId','name')
+    .sort({createdAt: -1});
+
+    res.status(200).json({products});
+    }
+    catch(e){
+        res.status(500).json({message: err.message});
+    }
 
 }
 
-module.exports={
+module.exports = {
     getAllProducts,
     getFeaturedProducts,
     getNewArrivals,
     getProductById,
-}
+    getProductBySearch
+};

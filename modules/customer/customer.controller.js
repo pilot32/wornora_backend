@@ -1,5 +1,5 @@
 const Product = require('../products/products.model');
-
+const { getPagination } = require('../../utils/pagination');
 
 /**
  * Function to return the all active producst from the
@@ -7,29 +7,49 @@ const Product = require('../products/products.model');
  */
 const getAllProducts = async (req,res)=>{
     try{
+        const { page, skip, limit } = getPagination(req);
         const {
             categoryId,
             subcategoryId,
+            search,
         } = req.query;
+
         const filter = {
-            isActive: true,
+            isActive: true
         };
+
         if(categoryId){
             filter.categoryId=categoryId;
         }
         if(subcategoryId){
             filter.subcategoryId=subcategoryId;
         }
-        
+        if(search){
+            filter.name = {
+                $regex: search,
+                $options: 'i',
+            };
+        }
+
         const products = await Product.find(filter)
+            .skip(skip)
+            .limit(limit)
             .populate('categoryId','name')
             .populate('subcategoryId','name')
-            .sort({createdAt:-1});
+            .sort({createdAt: -1});
 
-            res.status(200).json({products});
+        const total = await Product.countDocuments(filter);
+
+        res.status(200).json({
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+            products
+        });
     }
     catch(err){
-        res.status(500).json({message:err.message});
+        res.status(500).json({message: err.message});
     }
 }
 /**
@@ -79,7 +99,7 @@ const getProductById = async(req,res)=>{
         isActive:true
     })
     .populate('categoryId','name')
-    .populater('subcategoryId','name');
+    .populate('subcategoryId','name');
 
     if(!product){
         return res.status(400).json({'message':'no product found'});
@@ -92,48 +112,9 @@ const getProductById = async(req,res)=>{
         });
     }
 }
-/**Function to get the product according to search pattern
- * MVP-no regex just simple search and lookup in DB.
- */
-const getProductBySearch = async (req,res) => {
-    try{
-        const{
-        categoryId,
-        subcategoryId,
-        search,
-    }=req.query;
-    const filter = {
-        isActive: true
-    }
-    if(categoryId){
-        filter.categoryId=categoryId;
-    }
-    if(subcategoryId){
-        filter.subcategoryId=subcategoryId;
-    }
-    if(search){
-        filter.name = {
-            $regex: search,
-            $options: 'i',
-        };
-    }
-    const products = await Product.find(filter)
-    .populate('categoryId','name')
-    .populate('subcategoryId','name')
-    .sort({createdAt: -1});
-
-    res.status(200).json({products});
-    }
-    catch(e){
-        res.status(500).json({message: err.message});
-    }
-
-}
-
 module.exports = {
     getAllProducts,
     getFeaturedProducts,
     getNewArrivals,
-    getProductById,
-    getProductBySearch
+    getProductById
 };

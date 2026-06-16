@@ -5,7 +5,7 @@ const categoryRoutes = require('./modules/categories/category.route');
 const subCategoryRoutes = require('./modules/subcategories/subcategory.route');
 const productRoutes = require('./modules/products/products.route');
 const customerProductRoutes = require('./modules/customer/customer.route');
-
+const cartRoutes = require('./modules/cart/cart.route');
 const app = express();
 
 app.use(cors({ origin: '*', credentials: true }));
@@ -16,4 +16,5 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/subcategories', subCategoryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/customer',customerProductRoutes);
+app.use('/api/cart', cartRoutes);
 module.exports =app;

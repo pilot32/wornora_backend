@@ -1,0 +1,20 @@
+const Joi = require('joi');
+/**
+ * joi validation schema which will validate the incoming request body for creating a new coupon code
+ */
+const createCouponSchema = Joi.object({
+    code: Joi.string().uppercase().trim().required(),
+    description: Joi.string().allow('').optional(),
+    discountType: Joi.string().valid('percentage','fixed').required(),
+    discountValue: Joi.number().min(0).required(),
+    minimumCartValue: Joi.number().min(0).optional(),
+    maximumDiscountAmount: Joi.number().min(0).optional(),
+    startDate: Joi.date().optional(),
+    expiryDate: Joi.date().optional(),
+    usageLimit: Joi.number().min(0).allow(null),
+    perUserLimit: Joi.number().min(1).optional(),
+    isActive: Joi.boolean().default(true),
+});
+module.exports = {
+    createCouponSchema,
+}

@@ -1,3 +1,4 @@
+const { errorHandler } = require('./middlewares/error.middleware');
 const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./modules/auth/auth.route');
@@ -17,4 +18,5 @@ app.use('/api/subcategories', subCategoryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/customer',customerProductRoutes);
 app.use('/api/cart', cartRoutes);
+app.use(errorHandler);
 module.exports =app;

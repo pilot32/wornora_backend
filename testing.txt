@@ -24,3 +24,15 @@ testing for product route
         "image2.jpg"
     ]
 }
+
+cupon code 
+
+{
+    "code": "SAVE20",
+    "discountType": "percentage",
+    "discountValue": 20,
+    "minimumCartValue": 100,
+    "expiryDate": "2025-12-31T23:59:59.000Z",
+    "usageLimit": 100,
+    "extraField": "this will be stripped automatically"
+}

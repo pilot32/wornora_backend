@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const {createCoupon,getAllCoupons,getCuponById,updateCouponById,updateCouponStatusById,deleteCouponById} = require('./coupon.controller');
+const {createCoupon,getAllCoupons,getCouponById,updateCouponById,updateCouponStatusById,deleteCouponById} = require('./coupon.controller');
 const authMiddleware = require('../../middlewares/auth.middleware');
 const roleMiddleware = require('../../middlewares/role.middleware');
 const validationMiddleware = require('../../middlewares/validation.middleware');
-const {createCouponSchema} = require('../../validations/coupon.validation');
+const {createCouponSchema,updateCouponSchema} = require('../../validations/coupon.validation');
 //TODO: GET /api/coupons/code/WELCOME10
 router.post('/',
     authMiddleware,
@@ -17,11 +17,12 @@ router.get('/',
     roleMiddleware("ADMIN"),
     getAllCoupons);
 
-router.get('/:id', getCuponById);
+router.get('/:id', getCouponById);
 
 router.patch('/:id',
     authMiddleware,
     roleMiddleware("ADMIN"),
+    validationMiddleware(updateCouponSchema),
     updateCouponById);
 
 router.patch('/:id/status',

@@ -48,17 +48,17 @@ const getAllCoupons = async (req,res)=>{
         });
     }
 }
-/** Function to get the cuopons by id. */
-const getCuponById = async (req,res) => {
+/** Function to get the coupon by id. */
+const getCouponById = async (req,res) => {
     try{
-        const cuopon = await Coupon.findById(req.params.id);
-        if(!cuopon){
+        const coupon = await Coupon.findById(req.params.id);
+        if(!coupon){
             return res.status(404).json({
-                message: 'Cuopon not found'
+                message: 'Coupon not found'
             });
         }
         return res.status(200).json({
-            cuopon
+            coupon
         });
     }
     catch(err){
@@ -133,7 +133,7 @@ const deleteCouponById = async (req,res) => {
 module.exports = {
     createCoupon,
     getAllCoupons,
-    getCuponById,
+    getCouponById,
     updateCouponById,
     updateCouponStatusById,
     deleteCouponById

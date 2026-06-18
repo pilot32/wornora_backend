@@ -17,11 +17,11 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "joi": "^18.2.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.6.3",
     "multer": "^2.1.1",
-    "slugify": "^1.6.9",
-    "zod": "^4.4.3"
+    "slugify": "^1.6.9"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

@@ -76,13 +76,13 @@ const getSubCategoriesById = async(req, res)=>{
 const getAllSubCategories = async(req,res)=>{
     try{
         //user os requiestinf thats why query
-        const {categoryId, page = 1, limit = 10, isActive, search} = req.query;
+        const {categoryId, isActive, search} = req.query;
         
         const filter = {};
         if(categoryId){
             filter.categoryId=categoryId;
         }
-        if(isActive !== undefined) filter.isActive = isActive === ' true';
+        if(isActive !== undefined) filter.isActive = (isActive === 'true' || isActive === true);
         if (search) {
             filter.$or = [
                 { name: { $regex: search, $options: 'i' } },
@@ -90,30 +90,14 @@ const getAllSubCategories = async(req,res)=>{
             ];
         }
 
-        const pageNum = Math.max(1,parseInt(page));
-        const limitNum = Math.max(1,parseInt(limit));
-        const skip = (pageNum - 1) * limitNum;
         //added filter if only the user sends it.
-        const [subcategories, total] = await Promise.all([
-            Subcategory.find(filter)
-                .populate('categoryId', 'name')
-                .sort({ name: 1 })
-                .skip(skip)
-                .limit(limitNum),
-            Subcategory.countDocuments(filter)
-        ]);
+        const subcategories = await Subcategory.find(filter)
+            .populate('categoryId', 'name')
+            .sort({ name: 1 });
 
         res.status(200).json({
             message: 'Subcategories fetched successfully',
-            data: subcategories,
-            pagination: {
-                currentPage: pageNum,
-                limit: limitNum,
-                totalItems: total,
-                totalPages: Math.ceil(total / limitNum),
-                hasNextPage: pageNum < Math.ceil(total / limitNum),
-                hasPrevPage: pageNum > 1
-            }
+            data: subcategories
         });     
     }
     catch(err){

@@ -119,21 +119,14 @@ const getAllSubcategoriesSchema = Joi.object({
     .messages({
         'string.pattern.base': 'Category ID must be a valid 24-character hex string'
     }),
-    page: Joi.number()
-    .integer()
-    .min(1)
-    .default(1)
-    .optional(),
-
-    limit: Joi.number()
-    .integer()
-    .min(1)
-    .max(100)
-    .default(1)
-    .optional(),
 
     isActive: Joi.boolean()
+    .optional(),
+
+    search: Joi.string()
+    .trim()
     .optional()
+    .allow('')
 });
 
 

@@ -11,14 +11,8 @@ const addToCart = async (req,res) => {
             productId,quantity =1
         } = req.body;
         /**
-         * Validations to validate the request body and check if the product is available in the stock or not.
+         * Product availability and stock validation
          */
-        if(!productId){
-            return res.status(400).json({message: "Product ID is required"});
-        }
-        if(quantity < 1 || !Number.isInteger(quantity)){
-            return res.status(400).json({message: "Quantity must be a positive integer"});
-        }
         const product = await Product.findById(productId);
         if(!product){
             return res.status(404).json({message: "Product not found"});
@@ -39,8 +33,13 @@ const addToCart = async (req,res) => {
             });
         }
         const existingItemIndex = cart.items.findIndex((item)=>  item.productId.toString() === productId);
+        
         if(existingItemIndex >= 0){
-            cart.items[existingItemIndex].quantity +=quantity;
+            const newQuantity = cart.items[existingItemIndex].quantity + quantity;
+            if (product.stock < newQuantity) {
+                return res.status(400).json({message: `Cannot add to cart. Only ${product.stock} items in stock.`});
+            }
+            cart.items[existingItemIndex].quantity = newQuantity;
         }
         else{
             cart.items.push({
@@ -87,9 +86,6 @@ const updateQuantity = async (req,res) => {
         const userId = req.user.userId;
         const {productId} = req.params;
         const {quantity} = req.body;
-        if(!quantity || quantity < 1 || !Number.isInteger(quantity)){
-            return res.status(400).json({message: "Quantity must be a positive integer"});
-        }
 
         const cart = await Cart.findOne({userId});
         if(!cart){
@@ -101,6 +97,18 @@ const updateQuantity = async (req,res) => {
         if(!item){
             return res.status(404).json({message: "Product not found in cart"});
         }
+
+        const product = await Product.findById(productId);
+        if(!product){
+            return res.status(404).json({message: "Product not found"});
+        }
+        if(!product.isActive){
+            return res.status(400).json({message: "Product is not available"});
+        }
+        if(product.stock < quantity){
+            return res.status(400).json({message: `Cannot update quantity. Only ${product.stock} items in stock.`});
+        }
+
         item.quantity = quantity;
         await cart.save();
         await cart.populate('items.productId', 'name price images slug');
@@ -119,8 +127,7 @@ const updateQuantity = async (req,res) => {
 const removeFromCart = async (req, res) => {
     try {
         const userId = req.user.userId;
-        const { productId, prodctId } = req.params;
-        const itemId = productId || prodctId;
+        const { productId } = req.params;
 
         const cart = await Cart.findOne({ userId });
         if (!cart) {
@@ -129,7 +136,7 @@ const removeFromCart = async (req, res) => {
 
         const initialLength = cart.items.length;
         cart.items = cart.items.filter(
-            (item) => item.productId.toString() !== itemId
+            (item) => item.productId.toString() !== productId
         );
 
         if (cart.items.length === initialLength) {

@@ -51,8 +51,7 @@ const getCategoryById = async (req,res)=>{
 }
 const getAllCategory = async (req,res)=>{
     try{
-        const { page = 1, limit = 10, isActive, search } = req.query;
-        const skip = (page - 1) * limit;
+        const { isActive, search } = req.query;
 
         const filter = {};
         if (isActive !== undefined) {
@@ -66,21 +65,13 @@ const getAllCategory = async (req,res)=>{
         }
 
         const categories = await Category.find(filter)
-            .skip(skip)
-            .limit(limit)
             .sort({ createdAt: -1 });
-
-        const total = await Category.countDocuments(filter);
 
         if(!categories || categories.length === 0){
             return res.status(404).json({"message": "No categories found"});
         }
         res.status(200).json({
             message: "categories fetched successfully",
-            page,
-            limit,
-            total,
-            totalPages: Math.ceil(total / limit),
             categories
         });
     }

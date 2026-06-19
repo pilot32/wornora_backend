@@ -33,8 +33,13 @@ const addToCart = async (req,res) => {
             });
         }
         const existingItemIndex = cart.items.findIndex((item)=>  item.productId.toString() === productId);
+        
         if(existingItemIndex >= 0){
-            cart.items[existingItemIndex].quantity +=quantity;
+            const newQuantity = cart.items[existingItemIndex].quantity + quantity;
+            if (product.stock < newQuantity) {
+                return res.status(400).json({message: `Cannot add to cart. Only ${product.stock} items in stock.`});
+            }
+            cart.items[existingItemIndex].quantity = newQuantity;
         }
         else{
             cart.items.push({
@@ -92,6 +97,18 @@ const updateQuantity = async (req,res) => {
         if(!item){
             return res.status(404).json({message: "Product not found in cart"});
         }
+
+        const product = await Product.findById(productId);
+        if(!product){
+            return res.status(404).json({message: "Product not found"});
+        }
+        if(!product.isActive){
+            return res.status(400).json({message: "Product is not available"});
+        }
+        if(product.stock < quantity){
+            return res.status(400).json({message: `Cannot update quantity. Only ${product.stock} items in stock.`});
+        }
+
         item.quantity = quantity;
         await cart.save();
         await cart.populate('items.productId', 'name price images slug');

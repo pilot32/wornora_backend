@@ -36,3 +36,7 @@ cupon code
     "usageLimit": 100,
     "extraField": "this will be stripped automatically"
 }
+category testing/
+{
+  "name": "Clothing"
+}

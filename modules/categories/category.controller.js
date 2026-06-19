@@ -9,17 +9,15 @@ const createCategory = async(req,res)=>{
             ? slugify(slug, { lower: true, strict: true })
             : slugify(name || '', { lower: true, strict: true });
 
-        if (!name) {
-            return res.status(400).json({ "message": "name is required" });
-        }
-
         const existingCategory = await  Category.findOne({
             $or: [{ name }, { slug: generatedSlug }]
         });
+        //check for existing category 
         if(existingCategory){
             return res.status(400)
             .json({"message": "category with the same name or slug already exists"});
         }
+
         const category = await Category.create({
             name,
             slug: generatedSlug,
@@ -39,7 +37,6 @@ const createCategory = async(req,res)=>{
 
 const getCategoryById = async (req,res)=>{
     try{
-        const {id} = req.body;
         const category = await Category.findById(req.params.id);
         if(!category){
             return res.status(404).json({"message": "category not found"});
@@ -54,16 +51,41 @@ const getCategoryById = async (req,res)=>{
 }
 const getAllCategory = async (req,res)=>{
     try{
-        const categories = await Category.find();
+        const { page = 1, limit = 10, isActive, search } = req.query;
+        const skip = (page - 1) * limit;
+
+        const filter = {};
+        if (isActive !== undefined) {
+            filter.isActive = isActive;
+        }
+        if (search) {
+            filter.name = {
+                $regex: search,
+                $options: 'i'
+            };
+        }
+
+        const categories = await Category.find(filter)
+            .skip(skip)
+            .limit(limit)
+            .sort({ createdAt: -1 });
+
+        const total = await Category.countDocuments(filter);
+
         if(!categories || categories.length === 0){
             return res.status(404).json({"message": "No categories found"});
         }
-        res.status(200)
-        .json({"message": "categories fetched successqully",categories});
+        res.status(200).json({
+            message: "categories fetched successfully",
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+            categories
+        });
     }
     catch(err){
-        res.status(500)
-        .json({"message": err.message});
+        res.status(500).json({"message": err.message});
     }
 }
 
@@ -87,8 +109,8 @@ const updateCategoryById =async(req,res)=>{
 
         const updateData = { ...req.body };
 
-        // If name changes, regenerate slug
-        if (updateData.name) {
+        // If name changes and slug is not explicitly provided, regenerate slug
+        if (updateData.name && !updateData.slug) {
             updateData.slug = slugify(
                 updateData.name,
                 {
@@ -96,9 +118,10 @@ const updateCategoryById =async(req,res)=>{
                     strict: true
                 }
             );
+        } else if (updateData.slug) {
+            updateData.slug = slugify(updateData.slug, { lower: true, strict: true });
         }
-        console.log(updateData);
-        console.log(req.params.id);
+
         // Check for duplicate name/slug
         if (updateData.name || updateData.slug) {
 
@@ -109,7 +132,6 @@ const updateCategoryById =async(req,res)=>{
                     { slug: updateData.slug }
                 ]
             });
-            console.log(existingCategory);
             if (existingCategory) {
                 return res.status(400).json({
                     message: 'Category with same name or slug already exists'
@@ -149,10 +171,6 @@ const updateCategoryStatusById = async(req,res)=>{
     try
     {
         const {isActive} = req.body;
-        if(typeof isActive !== "boolean"){
-            return res.status(400)
-            .json({"message": "isActive must be of boolean"});
-        }
         const category = await Category.findByIdAndUpdate(
             req.params.id,
             {

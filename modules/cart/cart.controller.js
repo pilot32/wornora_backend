@@ -11,14 +11,8 @@ const addToCart = async (req,res) => {
             productId,quantity =1
         } = req.body;
         /**
-         * Validations to validate the request body and check if the product is available in the stock or not.
+         * Product availability and stock validation
          */
-        if(!productId){
-            return res.status(400).json({message: "Product ID is required"});
-        }
-        if(quantity < 1 || !Number.isInteger(quantity)){
-            return res.status(400).json({message: "Quantity must be a positive integer"});
-        }
         const product = await Product.findById(productId);
         if(!product){
             return res.status(404).json({message: "Product not found"});
@@ -87,9 +81,6 @@ const updateQuantity = async (req,res) => {
         const userId = req.user.userId;
         const {productId} = req.params;
         const {quantity} = req.body;
-        if(!quantity || quantity < 1 || !Number.isInteger(quantity)){
-            return res.status(400).json({message: "Quantity must be a positive integer"});
-        }
 
         const cart = await Cart.findOne({userId});
         if(!cart){
@@ -119,8 +110,7 @@ const updateQuantity = async (req,res) => {
 const removeFromCart = async (req, res) => {
     try {
         const userId = req.user.userId;
-        const { productId, prodctId } = req.params;
-        const itemId = productId || prodctId;
+        const { productId } = req.params;
 
         const cart = await Cart.findOne({ userId });
         if (!cart) {
@@ -129,7 +119,7 @@ const removeFromCart = async (req, res) => {
 
         const initialLength = cart.items.length;
         cart.items = cart.items.filter(
-            (item) => item.productId.toString() !== itemId
+            (item) => item.productId.toString() !== productId
         );
 
         if (cart.items.length === initialLength) {

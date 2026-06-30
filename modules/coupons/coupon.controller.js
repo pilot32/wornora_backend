@@ -1,135 +1,80 @@
-const Coupon = require('./coupon.model');
+const asyncHandler = require('../../utils/asyncHandler');
+const ApiResponse = require('../../utils/apiResponse');
+const {
+    createCouponService,
+    getAllCouponsService,
+    getCouponByIdService,
+    updateCouponByIdService,
+    updateCouponStatusByIdService,
+    deleteCouponByIdService
+} = require('./coupon.service');
 
 /**
- * Function to create a new cuopon code 
+ * Function to create a new coupon code 
  */
+const createCoupon = asyncHandler(async (req, res) => {
+    const coupon = await createCouponService(req.body);
 
-const createCoupon = async (req, res) => {
-    try {
-        //no need to destructure everything from req.body, just use it directly using the dot convention.
-        const data = req.body;
-        const existingCoupon = await Coupon.findOne({code: data.code});
-        if (existingCoupon) {
-            return res.status(400).json({
-                message: 'Coupon code already exists'
-            });
-        }
+    res.status(201).json(
+        new ApiResponse(201, 'Coupon created successfully', coupon)
+    );
+});
 
-        const coupon = await Coupon.create(data);
+/** 
+ * Function to get all the coupons in the list 
+ */
+const getAllCoupons = asyncHandler(async (req, res) => {
+    const coupons = await getAllCouponsService();
 
-        return res.status(201).json({
-            message:
-                'Coupon created successfully',
-            coupon
-        });
-    } catch (err) {
+    res.status(200).json(
+        new ApiResponse(200, 'Coupons fetched successfully', coupons)
+    );
+});
 
-        return res.status(500).json({
-            message: err.message
-        });
-    }
-};
-/** Function to get all the coupons in the list 
- * 
-*/
+/** 
+ * Function to get the coupon by ID. 
+ */
+const getCouponById = asyncHandler(async (req, res) => {
+    const coupon = await getCouponByIdService(req.params.id);
 
-const getAllCoupons = async (req,res)=>{
-    try{
-        const coupons = await Coupon.find()
-        .sort({createdAt: -1});
+    res.status(200).json(
+        new ApiResponse(200, 'Coupon fetched successfully', coupon)
+    );
+});
 
-        return res.status(200).json({
-            coupons
-        });
-    }
-    catch(err){
-        return res.status(500).json({
-            message: err.message
-        });
-    }
-}
-/** Function to get the coupon by id. */
-const getCouponById = async (req,res) => {
-    try{
-        const coupon = await Coupon.findById(req.params.id);
-        if(!coupon){
-            return res.status(404).json({
-                message: 'Coupon not found'
-            });
-        }
-        return res.status(200).json({
-            coupon
-        });
-    }
-    catch(err){
-        return res.status(500).json({
-            message: err.message
-        });
-    }
-}
-/**Fucntion to update the details of the cuopon*/
-const updateCouponById = async (req,res)=>{
-    try{
-        const coupon = await Coupon.findByIdAndUpdate(req.params.id, 
-            req.body, 
-            { new: true, 
-            runValidators: true });
-        if(!coupon){ 
-            return res.status(404).json({
-                message: 'Coupon not found'
-            });
-        }
-        return res.status(200).json({ message: 'Coupon updated successfully', coupon });
-    }
-    catch(err){
-        return res.status(500).json({ message: err.message });
-    }
-}
+/** 
+ * Function to update the details of the coupon 
+ */
+const updateCouponById = asyncHandler(async (req, res) => {
+    const coupon = await updateCouponByIdService(req.params.id, req.body);
 
-const updateCouponStatusById = async (req, res) => {
-    try {
-        const { isActive } = req.body;
-        if(typeof isActive !== 'boolean'){
-            return res.status(400).json({
-                message: 'isActive must be boolean'
-            });
-        }
-        const coupon = await Coupon.findByIdAndUpdate(req.params.id, 
-            { isActive }, 
-            { new: true });
-        if (!coupon) {
-            return res.status(404).
-            json({ message: 'Coupon not found' });
-        }
-        return res.status(200).json({ message: 'Status updated successfully', coupon });
-    } catch (err) {
-        return res.status(500).json({ message: err.message });
-    }
-}
+    res.status(200).json(
+        new ApiResponse(200, 'Coupon updated successfully', coupon)
+    );
+});
 
 /**
- * Fucntion to delete the cuopon by the id.
+ * Function to update coupon active status
  */
+const updateCouponStatusById = asyncHandler(async (req, res) => {
+    const coupon = await updateCouponStatusByIdService(req.params.id, req.body.isActive);
 
-const deleteCouponById = async (req,res) => { 
-    try{
-        const coupon = await Coupon.findByIdAndDelete(req.params.id); 
+    res.status(200).json(
+        new ApiResponse(200, 'Status updated successfully', coupon)
+    );
+});
 
-        if(!coupon){
-            return res.status(404).json({
-                message: 'Coupon not found'
-            });
-        }
-        return res.status(200).json({
-            message: 'Coupon deleted successfully'
-        });
-    }
-    catch(err){
-        return res.status(500).json({
-            message: err.message
-        }); 
-    }
-}
+/**
+ * Function to delete the coupon by ID
+ */
+const deleteCouponById = asyncHandler(async (req, res) => {
+    await deleteCouponByIdService(req.params.id);
+
+    res.status(200).json(
+        new ApiResponse(200, 'Coupon deleted successfully')
+    );
+});
+
 module.exports = {
     createCoupon,
     getAllCoupons,
@@ -137,4 +82,4 @@ module.exports = {
     updateCouponById,
     updateCouponStatusById,
     deleteCouponById
-}
+};

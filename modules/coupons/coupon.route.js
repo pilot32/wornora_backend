@@ -12,7 +12,7 @@ const {
 const authMiddleware = require('../../middlewares/auth.middleware');
 const roleMiddleware = require('../../middlewares/role.middleware');
 const validationMiddleware = require('../../middlewares/validation.middleware');
-
+const USER_ROLES = require('../../constants/roles');
 const {
     createCouponSchema,
     updateCouponSchema,
@@ -23,7 +23,7 @@ const {
 // Create a coupon
 router.post('/',
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware(USER_ROLES.ADMIN),
     validationMiddleware(createCouponSchema),
     createCoupon
 );
@@ -31,7 +31,7 @@ router.post('/',
 // Get all coupons (Admin only)
 router.get('/', 
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware(USER_ROLES.ADMIN),
     getAllCoupons
 );
 
@@ -44,7 +44,7 @@ router.get('/:id',
 // Update coupon details
 router.patch('/:id',
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware(USER_ROLES.ADMIN),
     validationMiddleware(idParamSchema, 'params'),
     validationMiddleware(updateCouponSchema),
     updateCouponById
@@ -53,7 +53,7 @@ router.patch('/:id',
 // Update coupon status
 router.patch('/:id/status',
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware(USER_ROLES.ADMIN),
     validationMiddleware(idParamSchema, 'params'),
     validationMiddleware(updateCouponStatusSchema),
     updateCouponStatusById
@@ -62,7 +62,7 @@ router.patch('/:id/status',
 // Delete coupon by ID
 router.delete('/:id',
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware(USER_ROLES.ADMIN),
     validationMiddleware(idParamSchema, 'params'),
     deleteCouponById
 );

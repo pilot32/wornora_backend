@@ -6,14 +6,14 @@ const { addToCart,
         removeFromCart,
         clearCart,
         calculateCartSummary 
-    } = require('./cart.controller');
-const authMiddleware = require('../../middlewares/auth.middleware');
-const validationMiddleware = require('../../middlewares/validation.middleware');
+} = require('./cart.controller');
 const {
     addToCartSchema,
     updateQuantitySchema,
     productIdParamSchema
 } = require('../../validations/cart.validation');
+const authMiddleware = require('../../middlewares/auth.middleware');
+const validationMiddleware = require('../../middlewares/validation.middleware');
 
 //add product to cart
 router.post('/add',

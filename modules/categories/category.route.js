@@ -3,6 +3,7 @@ const router = express.Router();
 const authMiddleware = require('../../middlewares/auth.middleware');
 const roleMiddleware = require('../../middlewares/role.middleware');
 const validationMiddleware = require('../../middlewares/validation.middleware');
+const USER_ROLES = require('../../constants/roles');
 const {
   createCategory,
   deleteCategoryById,
@@ -22,14 +23,14 @@ const {
 router.post(
   '/',
   authMiddleware,
-  roleMiddleware('ADMIN'),
+  roleMiddleware(USER_ROLES.ADMIN),
   validationMiddleware(createCategorySchema),
   createCategory
 );
 router.get(
   "/", 
   authMiddleware,
-  roleMiddleware("ADMIN"),
+  roleMiddleware(USER_ROLES.ADMIN),
   validationMiddleware(getAllCategoriesSchema, 'query'),
   getAllCategory
 );
@@ -37,7 +38,7 @@ router.get(
 router.get(
   "/:id", 
   authMiddleware,
-  roleMiddleware("ADMIN"),
+  roleMiddleware(USER_ROLES.ADMIN),
   validationMiddleware(idParamSchema, 'params'),
   getCategoryById
 );
@@ -45,7 +46,7 @@ router.get(
 router.patch(
   "/:id",
   authMiddleware,
-  roleMiddleware("ADMIN"),
+  roleMiddleware(USER_ROLES.ADMIN),
   validationMiddleware(idParamSchema, 'params'),
   validationMiddleware(updateCategorySchema),
   updateCategoryById
@@ -54,14 +55,14 @@ router.patch(
 router.delete(
   "/:id",
   authMiddleware,
-  roleMiddleware("ADMIN"),
+  roleMiddleware(USER_ROLES.ADMIN),
   validationMiddleware(idParamSchema, 'params'),
   deleteCategoryById
 );
 router.patch(
   "/:id/status", 
   authMiddleware,
-  roleMiddleware("ADMIN"),
+  roleMiddleware(USER_ROLES.ADMIN),
   validationMiddleware(idParamSchema, 'params'),
   validationMiddleware(updateCategoryStatusSchema),
   updateCategoryStatusById

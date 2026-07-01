@@ -4,6 +4,7 @@ const authMiddleware = require('../../middlewares/auth.middleware');
 const roleMiddleware = require('../../middlewares/role.middleware');
 const upload = require('../../middlewares/upload.middleware');
 const validationMiddleware = require('../../middlewares/validation.middleware');
+const USER_ROLES = require('../../constants/roles'); 
 const {
     createProduct,
     getAllProducts,
@@ -30,7 +31,7 @@ const {
 router.post(
     '/',
     authMiddleware,
-    roleMiddleware('ADMIN'),
+    roleMiddleware(USER_ROLES.ADMIN),
     validationMiddleware(createProductSchema),
     createProduct
 );
@@ -53,7 +54,7 @@ router.get(
 router.patch(
     "/:id",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware(USER_ROLES.ADMIN),
     validationMiddleware(idParamSchema, 'params'),
     validationMiddleware(updateProductSchema),
     updateProductById
@@ -63,7 +64,7 @@ router.patch(
 router.patch(
     "/:id/status",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware(USER_ROLES.ADMIN),
     validationMiddleware(idParamSchema, 'params'),
     validationMiddleware(updateStatusSchema),
     updateProductStatusById
@@ -73,7 +74,7 @@ router.patch(
 router.patch(
     "/:id/featured",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware(USER_ROLES.ADMIN),
     validationMiddleware(idParamSchema, 'params'),
     validationMiddleware(updateFeaturedSchema),
     updateProductFeaturedStatusById
@@ -90,7 +91,7 @@ router.post(
 router.delete(
     "/:id",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware(USER_ROLES.ADMIN),
     validationMiddleware(idParamSchema, 'params'),
     deleteProductById
 );

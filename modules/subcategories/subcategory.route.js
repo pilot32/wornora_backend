@@ -2,6 +2,7 @@ const express = require('express');
 const authMiddleware = require('../../middlewares/auth.middleware');
 const roleMiddleware = require('../../middlewares/role.middleware');
 const validationMiddleware = require('../../middlewares/validation.middleware');
+const USER_ROLES = require('../../constants/roles');
 const {
     createSubcategorySchema,
     updateSubcategorySchema,
@@ -23,7 +24,7 @@ const {
 router.post(
     "/",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware(USER_ROLES.ADMIN),
     validationMiddleware(createSubcategorySchema),
     createSubCategory
 );
@@ -43,7 +44,7 @@ router.get(
 router.patch(
     "/:id",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware(USER_ROLES.ADMIN),
     validationMiddleware(idParamSchema, 'params'),
     validationMiddleware(updateSubcategorySchema),
     updateSubCategoryById
@@ -52,7 +53,7 @@ router.patch(
 router.patch(
     "/:id/status",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware(USER_ROLES.ADMIN),
     validationMiddleware(idParamSchema, 'params'),
     validationMiddleware(updateSubcategoryStatusSchema),
     updateStatusSubCategoryById
@@ -61,7 +62,7 @@ router.patch(
 router.delete(
     "/:id",
     authMiddleware,
-    roleMiddleware("ADMIN"),
+    roleMiddleware(USER_ROLES.ADMIN),
     validationMiddleware(idParamSchema, 'params'),
     deleteSubCategoryById
 );

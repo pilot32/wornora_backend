@@ -1,4 +1,5 @@
 const ORDER_STATUS = Object.freeze({
+    PENDING: 'PENDING',
     PLACED: 'PLACED',
     CONFIRMED: 'CONFIRMED',
     SHIPPED: 'SHIPPED',

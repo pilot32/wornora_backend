@@ -41,8 +41,20 @@ const productIdParamSchema = Joi.object({
         })
 });
 
+const applyCouponSchema = Joi.object({
+    code: Joi.string()
+        .trim()
+        .uppercase()
+        .required()
+        .messages({
+            'string.empty': 'Coupon code is required',
+            'any.required': 'Coupon code is required'
+        })
+});
+
 module.exports = {
     addToCartSchema,
     updateQuantitySchema,
-    productIdParamSchema
+    productIdParamSchema,
+    applyCouponSchema
 };

@@ -37,6 +37,8 @@ router.get('/',
 
 // Get coupon by ID
 router.get('/:id',
+    authMiddleware,
+    roleMiddleware(USER_ROLES.ADMIN),
     validationMiddleware(idParamSchema, 'params'),
     getCouponById
 );

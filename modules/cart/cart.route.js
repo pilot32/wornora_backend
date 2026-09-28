@@ -5,12 +5,14 @@ const { addToCart,
         updateQuantity, 
         removeFromCart,
         clearCart,
-        calculateCartSummary 
+        applyCouponToCart,
+        removeCouponFromCart
 } = require('./cart.controller');
 const {
     addToCartSchema,
     updateQuantitySchema,
-    productIdParamSchema
+    productIdParamSchema,
+    applyCouponSchema
 } = require('../../validations/cart.validation');
 const authMiddleware = require('../../middlewares/auth.middleware');
 const validationMiddleware = require('../../middlewares/validation.middleware');
@@ -24,6 +26,19 @@ router.post('/add',
 
 //get all the items from cart
 router.get('/', authMiddleware, getCartItems);
+
+//apply coupon to the cart
+router.post('/apply-coupon',
+    authMiddleware,
+    validationMiddleware(applyCouponSchema),
+    applyCouponToCart
+);
+
+//remove coupon from the cart
+router.delete('/coupon',
+    authMiddleware,
+    removeCouponFromCart
+);
 
 //update the quantity of  items in cart
 router.patch('/:productId',

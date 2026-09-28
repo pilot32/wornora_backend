@@ -59,17 +59,16 @@ const createProductSchema = Joi.object({
     }),
 
     discountedPrice: Joi.number()
-    .positive()
+    .min(0)
     .optional()
     .allow(null)
-    .min(0)
     .messages({
-        'number.positive': 'Discounted price must be greater than 0'
+        'number.min': 'Discounted price cannot be negative'
     }),
 
     stock: Joi.number()
     .integer()
-    .min(1)
+    .min(0)
     .default(0)
     .optional()
     .messages({
@@ -90,6 +89,22 @@ const createProductSchema = Joi.object({
     .default(true)
     .optional()
 
+})
+.custom((value, helpers) => {
+    if (
+        value.discountedPrice !== undefined &&
+        value.discountedPrice !== null &&
+        value.discountedPrice > value.price
+    ) {
+        return helpers.error('any.invalid', {
+            message: 'Discounted price cannot exceed actual price'
+        });
+    }
+
+    return value;
+})
+.messages({
+    'any.invalid': '{{#message}}'
 });
 
 //update product schema 
@@ -147,11 +162,11 @@ const updateProductSchema = Joi.object({
     }),
 
     discountedPrice: Joi.number()
-    .positive()
+    .min(0)
     .optional()
     .allow(null)
     .messages({
-        'number.positive': 'Discounted price must be greater than 0'
+        'number.min': 'Discounted price cannot be negative'
     }),
 
     stock: Joi.number()
@@ -177,8 +192,23 @@ const updateProductSchema = Joi.object({
     .optional()
 })
 .min(1)
+.custom((value, helpers) => {
+    if (
+        value.price !== undefined &&
+        value.discountedPrice !== undefined &&
+        value.discountedPrice !== null &&
+        value.discountedPrice > value.price
+    ) {
+        return helpers.error('any.invalid', {
+            message: 'Discounted price cannot exceed actual price'
+        });
+    }
+
+    return value;
+})
 .messages({
-    'object.min': 'At least one field is required for update'
+    'object.min': 'At least one field is required for update',
+    'any.invalid': '{{#message}}'
 });
 
 //update status schema 

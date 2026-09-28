@@ -83,6 +83,8 @@ router.patch(
 //route to upload uploadImages
 router.post(
     '/upload',
+    authMiddleware,
+    roleMiddleware(USER_ROLES.ADMIN),
     upload.single('image'),
     uploadImage
 );

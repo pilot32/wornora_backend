@@ -4,6 +4,8 @@ const Subcategory = require('../subcategories/subcategory.model');
 const slugify = require('slugify');
 const ApiError = require('../../utils/apiError');
 
+const parseBooleanFilter = (value) => value === true || value === 'true';
+
 const createProductService = async (data) => {
     const {
         name,
@@ -46,6 +48,10 @@ const createProductService = async (data) => {
         throw new ApiError(400, 'Product already exists');
     }
 
+    if (discountedPrice !== undefined && discountedPrice !== null && discountedPrice > price) {
+        throw new ApiError(400, 'Discounted price cannot exceed actual price');
+    }
+
     // Create product
     const product = await Product.create({
         name,
@@ -54,8 +60,8 @@ const createProductService = async (data) => {
         categoryId,
         subcategoryId,
         price,
-        discountedPrice: discountedPrice || null,
-        stock: stock || 1,
+        discountedPrice: discountedPrice ?? null,
+        stock: stock ?? 0,
         images: images || [],
         isActive: isActive !== undefined ? isActive : true,
         featured: featured !== undefined ? featured : false
@@ -87,8 +93,8 @@ const getAllProductsService = async (query) => {
     const filter = {};
     if (categoryId) filter.categoryId = categoryId;
     if (subcategoryId) filter.subcategoryId = subcategoryId;
-    if (featured !== undefined) filter.featured = featured === 'true';
-    if (isActive !== undefined) filter.isActive = isActive === 'true';
+    if (featured !== undefined) filter.featured = parseBooleanFilter(featured);
+    if (isActive !== undefined) filter.isActive = parseBooleanFilter(isActive);
 
     if (search) {
         filter.$or = [

@@ -35,7 +35,7 @@ const register = async(req,res)=>{
 const login = async(req, res)=>{
     try{
     const{email,password}=req.body;
-    const user = await User.findOne({email: email});
+    const user = await User.findOne({email: email}).select('+password');
     if(!user){
         return res
         .status(400)
@@ -58,7 +58,7 @@ const login = async(req, res)=>{
     }
     );
     res.status(200)
-    .json({"message":"Login Succesful",user,token});
+    .json({"message":"Login Succesful",user: user.toJSON(),token});
 }
 catch(err){
     res.status(500)

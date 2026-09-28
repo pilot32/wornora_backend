@@ -69,6 +69,8 @@ Users can have one of two roles:
 - [Cart API](#6-cart-api-apicart)
 - [Coupon API](#7-coupon-api-apicoupon)
 - [Address API](#8-address-api-apiaddresses)
+- [Home Page Content APIs](#9-home-page-content-apis-apihome)
+- [Testing Guide](#10-testing-guide)
 
 ---
 
@@ -1307,3 +1309,347 @@ Manage customer address books. All endpoints require **Authentication**.
   }
 }
 ```
+
+---
+
+## 9. Home Page Content APIs (`/api/home`)
+
+Endpoints to manage the homepage Hero Slides, Promo Banners, and Category Tiles.
+
+### 9.1 Hero Slides
+
+#### Get Hero Slides
+*   **Path:** `GET /hero-slides`
+*   **Access:** Public
+*   **Query Parameters:**
+    *   `activeOnly` (boolean, default: `true`, optional) - If `false`, returns inactive slides too (for Admin preview).
+
+**Example Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "message": "Hero slides fetched successfully",
+  "data": [
+    {
+      "_id": "60d0fe4f5311236168a109a1",
+      "eyebrow": "Handcrafted Elegance",
+      "title": "Celebrate Your\nDesi Heritage",
+      "subtitle": "Sarees, lehengas & jewellery woven with timeless artistry.",
+      "cta": { "label": "Shop the Collection", "to": "/shop" },
+      "secondaryCta": { "label": "New Arrivals", "to": "/shop?filter=new" },
+      "image": "https://example.com/saree.jpg",
+      "align": "left",
+      "isActive": true,
+      "order": 1
+    }
+  ]
+}
+```
+
+#### Create Hero Slide
+*   **Path:** `POST /hero-slides`
+*   **Access:** Authenticated, Admin Only
+*   **Request Body:**
+    *   `eyebrow` (string, optional)
+    *   `title` (string, required)
+    *   `subtitle` (string, optional)
+    *   `cta` (object with `label` and `to` strings, required)
+    *   `secondaryCta` (object with `label` and `to` strings, optional)
+    *   `image` (string, valid URL, required)
+    *   `align` (string, valid: `left`, `center`, `right`, default: `left`, optional)
+    *   `isActive` (boolean, default: `true`, optional)
+    *   `order` (number, default: `0`, optional)
+
+**Example Request:**
+```json
+{
+  "eyebrow": "Exclusive Launch",
+  "title": "New Banarasi Silk",
+  "cta": {
+    "label": "View Collection",
+    "to": "/shop?category=banarasi"
+  },
+  "image": "https://example.com/banarasi-hero.jpg"
+}
+```
+
+**Example Response (210 Created):**
+```json
+{
+  "statusCode": 201,
+  "message": "Hero slide created successfully",
+  "data": {
+    "_id": "64a1d48c8c22bb371b2d01e1",
+    "eyebrow": "Exclusive Launch",
+    "title": "New Banarasi Silk",
+    "cta": { "label": "View Collection", "to": "/shop?category=banarasi" },
+    "image": "https://example.com/banarasi-hero.jpg",
+    "align": "left",
+    "isActive": true,
+    "order": 0
+  }
+}
+```
+
+#### Update Hero Slide
+*   **Path:** `PATCH /hero-slides/:id`
+*   **Access:** Authenticated, Admin Only
+*   **Request Body:** Same fields as create (all optional, at least one required).
+
+**Example Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "message": "Hero slide updated successfully",
+  "data": { ... }
+}
+```
+
+#### Update Hero Slide Status
+*   **Path:** `PATCH /hero-slides/:id/status`
+*   **Access:** Authenticated, Admin Only
+*   **Request Body:**
+    *   `isActive` (boolean, required)
+
+**Example Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "message": "Hero slide status updated successfully",
+  "data": {
+    "_id": "64a1d48c8c22bb371b2d01e1",
+    "isActive": false
+  }
+}
+```
+
+#### Delete Hero Slide
+*   **Path:** `DELETE /hero-slides/:id`
+*   **Access:** Authenticated, Admin Only
+
+**Example Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "message": "Hero slide deleted successfully"
+}
+```
+
+---
+
+### 9.2 Promo Banners
+
+#### Get Promo Banners
+*   **Path:** `GET /promo-banners`
+*   **Access:** Public
+*   **Query Parameters:**
+    *   `activeOnly` (boolean, default: `true`, optional)
+
+**Example Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "message": "Promotional banners fetched successfully",
+  "data": [
+    {
+      "_id": "60d0fe4f5311236168a109b1",
+      "eyebrow": "Festive Sale",
+      "title": "Up to 40% Off",
+      "subtitle": "Use code FESTIVE20 at checkout",
+      "cta": { "label": "Shop Now", "to": "/shop?filter=sale" },
+      "image": "https://example.com/banner.jpg",
+      "accent": "maroon",
+      "isActive": true,
+      "order": 1
+    }
+  ]
+}
+```
+
+#### Create Promo Banner
+*   **Path:** `POST /promo-banners`
+*   **Access:** Authenticated, Admin Only
+*   **Request Body:**
+    *   `eyebrow` (string, optional)
+    *   `title` (string, required)
+    *   `subtitle` (string, optional)
+    *   `cta` (object with `label` and `to` strings, required)
+    *   `image` (string, valid URL, required)
+    *   `accent` (string, valid: `maroon`, `terracotta`, `gold`, default: `gold`, optional)
+    *   `isActive` (boolean, default: `true`, optional)
+    *   `order` (number, default: `0`, optional)
+
+**Example Response (201 Created):**
+```json
+{
+  "statusCode": 201,
+  "message": "Promotional banner created successfully",
+  "data": { ... }
+}
+```
+
+#### Update Promo Banner
+*   **Path:** `PATCH /promo-banners/:id`
+*   **Access:** Authenticated, Admin Only
+
+#### Update Promo Banner Status
+*   **Path:** `PATCH /promo-banners/:id/status`
+*   **Access:** Authenticated, Admin Only
+*   **Request Body:** `{ "isActive": boolean }`
+
+#### Delete Promo Banner
+*   **Path:** `DELETE /promo-banners/:id`
+*   **Access:** Authenticated, Admin Only
+
+---
+
+### 9.3 Category Tiles
+
+#### Get Category Tiles
+*   **Path:** `GET /category-tiles`
+*   **Access:** Public
+*   **Query Parameters:**
+    *   `activeOnly` (boolean, default: `true`, optional)
+
+**Example Response (200 OK):**
+```json
+{
+  "statusCode": 200,
+  "message": "Category tiles fetched successfully",
+  "data": [
+    {
+      "_id": "60d0fe4f5311236168a109c1",
+      "name": "Sarees",
+      "slug": "sarees",
+      "to": "/shop?category=clothing&subcategory=sarees",
+      "image": "https://example.com/saree-tile.jpg",
+      "isActive": true,
+      "order": 1
+    }
+  ]
+}
+```
+
+#### Create Category Tile
+*   **Path:** `POST /category-tiles`
+*   **Access:** Authenticated, Admin Only
+*   **Request Body:**
+    *   `name` (string, required)
+    *   `slug` (string, lowercase, alphanumeric/hyphens, required)
+    *   `to` (string, required)
+    *   `image` (string, valid URL, required)
+    *   `isActive` (boolean, default: `true`, optional)
+    *   `order` (number, default: `0`, optional)
+
+**Example Response (201 Created):**
+```json
+{
+  "statusCode": 201,
+  "message": "Category tile created successfully",
+  "data": { ... }
+}
+```
+
+#### Update Category Tile
+*   **Path:** `PATCH /category-tiles/:id`
+*   **Access:** Authenticated, Admin Only
+
+#### Update Category Tile Status
+*   **Path:** `PATCH /category-tiles/:id/status`
+*   **Access:** Authenticated, Admin Only
+*   **Request Body:** `{ "isActive": boolean }`
+
+#### Delete Category Tile
+*   **Path:** `DELETE /category-tiles/:id`
+*   **Access:** Authenticated, Admin Only
+
+---
+
+## 10. Testing Guide
+
+You can test the API endpoints using **cURL** commands in your terminal or via tools like Postman. Below are exact templates and instructions for testing the newly implemented Home Content and existing APIs.
+
+### Prerequisites
+Make sure your server is running locally:
+```bash
+npm run dev
+```
+By default, the server runs on port **5000** (Base URL: `http://localhost:5000/api`).
+
+---
+
+### 10.1 Public Endpoint Testing
+
+Since public routes do not require authentication, you can run simple GET requests directly:
+
+#### 1. Fetch Hero Slides
+```bash
+curl -X GET "http://localhost:5000/api/home/hero-slides"
+```
+
+#### 2. Fetch Promo Banners
+```bash
+curl -X GET "http://localhost:5000/api/home/promo-banners"
+```
+
+#### 3. Fetch Category Tiles
+```bash
+curl -X GET "http://localhost:5000/api/home/category-tiles"
+```
+
+---
+
+### 10.2 Admin Endpoint Testing
+
+Admin endpoints require a valid JWT token with the `ADMIN` role. Below is an active testing admin token you can use:
+
+**Token:**
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTFkYzYwMmMxYTk0ZTRmNjE0YmQzMmMiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3ODA0MTI5NTksImV4cCI6MTc4MTAxNzc1OX0.EDm9cok1bY7bYIpWUIwcvxGvFiLKFCxl14L8m0tiSVc
+```
+
+#### 1. Create a Hero Slide (POST)
+```bash
+curl -X POST "http://localhost:5000/api/home/hero-slides" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTFkYzYwMmMxYTk0ZTRmNjE0YmQzMmMiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3ODA0MTI5NTksImV4cCI6MTc4MTAxNzc1OX0.EDm9cok1bY7bYIpWUIwcvxGvFiLKFCxl14L8m0tiSVc" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "eyebrow": "Festive Special",
+    "title": "Timeless Handlooms",
+    "subtitle": "Discover handwoven traditional wear.",
+    "cta": { "label": "Shop Now", "to": "/shop" },
+    "image": "https://example.com/handloom.jpg",
+    "align": "center",
+    "order": 1
+  }'
+```
+
+#### 2. Update a Hero Slide (PATCH)
+Replace `YOUR_HERO_SLIDE_ID` with the `_id` returned from the create request:
+```bash
+curl -X PATCH "http://localhost:5000/api/home/hero-slides/YOUR_HERO_SLIDE_ID" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTFkYzYwMmMxYTk0ZTRmNjE0YmQzMmMiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3ODA0MTI5NTksImV4cCI6MTc4MTAxNzc1OX0.EDm9cok1bY7bYIpWUIwcvxGvFiLKFCxl14L8m0tiSVc" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Timeless Handwoven Heritage"
+  }'
+```
+
+#### 3. Toggle a Hero Slide Status (PATCH)
+```bash
+curl -X PATCH "http://localhost:5000/api/home/hero-slides/YOUR_HERO_SLIDE_ID/status" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTFkYzYwMmMxYTk0ZTRmNjE0YmQzMmMiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3ODA0MTI5NTksImV4cCI6MTc4MTAxNzc1OX0.EDm9cok1bY7bYIpWUIwcvxGvFiLKFCxl14L8m0tiSVc" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "isActive": false
+  }'
+```
+
+#### 4. Delete a Hero Slide (DELETE)
+```bash
+curl -X DELETE "http://localhost:5000/api/home/hero-slides/YOUR_HERO_SLIDE_ID" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTFkYzYwMmMxYTk0ZTRmNjE0YmQzMmMiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3ODA0MTI5NTksImV4cCI6MTc4MTAxNzc1OX0.EDm9cok1bY7bYIpWUIwcvxGvFiLKFCxl14L8m0tiSVc"
+```
+
+The same request patterns with the `Authorization` header can be used to create, update, toggle, or delete Promo Banners and Category Tiles at `/api/home/promo-banners` and `/api/home/category-tiles`.
+

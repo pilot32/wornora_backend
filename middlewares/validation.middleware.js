@@ -11,8 +11,18 @@ const validationMiddleware = (schema, source = 'body') => (req, res, next) => {
         return res.status(400).json({message: 'validation failed', error: error.details[0].message});
     }
     
-    // Update the correct part of the request with the validated/formatted values
-    req[source] = value;
+    // Update the correct part of the request with the validated/formatted values.
+    // Express 5 exposes req.query through a getter, so redefine it safely.
+    if (source === 'query') {
+        req.validatedQuery = value;
+        Object.defineProperty(req, 'query', {
+            value,
+            configurable: true,
+            enumerable: true,
+        });
+    } else {
+        req[source] = value;
+    }
     next();
 };
 

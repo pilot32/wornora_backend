@@ -8,10 +8,34 @@ const customerProductRoutes = require('./modules/customer/customer.route');
 const cartRoutes = require('./modules/cart/cart.route');
 const couponRoutes = require('./modules/coupons/coupon.route');
 const addressRoutes = require('./modules/address/address.route');
+const homeRoutes = require('./modules/home/home.route');
 const errorMiddleware = require('./middlewares/error.middleware');
 const app = express();
 
-app.use(cors({ origin: '*', credentials: true }));
+const allowedOrigins = (
+    process.env.CORS_ORIGIN ||
+    process.env.FRONTEND_URL ||
+    'http://localhost:5173,http://127.0.0.1:5173'
+)
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+const allowAllOrigins = allowedOrigins.includes('*');
+
+app.use(cors({
+    origin: allowAllOrigins
+        ? true
+        : (origin, callback) => {
+            if (!origin || allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+
+            const error = new Error('Not allowed by CORS');
+            error.statusCode = 403;
+            return callback(error);
+        },
+    credentials: !allowAllOrigins
+}));
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 
@@ -22,6 +46,7 @@ app.use('/api/customer',customerProductRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/coupon', couponRoutes);
 app.use('/api/addresses', addressRoutes);
+app.use('/api/home', homeRoutes);
 app.use(errorMiddleware);
 
 module.exports = app;

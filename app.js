@@ -9,6 +9,7 @@ const cartRoutes = require('./modules/cart/cart.route');
 const couponRoutes = require('./modules/coupons/coupon.route');
 const addressRoutes = require('./modules/address/address.route');
 const homeRoutes = require('./modules/home/home.route');
+const orderRoutes = require('./modules/order/order.routes');
 const errorMiddleware = require('./middlewares/error.middleware');
 const app = express();
 
@@ -47,6 +48,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/coupon', couponRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/home', homeRoutes);
+app.use('/api/orders', orderRoutes);
 app.use(errorMiddleware);
 
 module.exports = app;

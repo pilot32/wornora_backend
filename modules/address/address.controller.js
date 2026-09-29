@@ -5,6 +5,7 @@ const {
     createAddressService,
     getUserAddressesService,
     getAddressByIdService,
+    getDefaultAddressService,
     updateAddressService,
     deleteAddressService,
     setDefaultAddressService
@@ -44,6 +45,17 @@ const getAddressById = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Get the default address for the logged-in user
+ */
+const getDefaultAddress = asyncHandler(async (req, res) => {
+    const address = await getDefaultAddressService(req.user.userId);
+
+    res.status(200).json(
+        new ApiResponse(200, 'Default address retrieved successfully', address)
+    );
+});
+
+/**
  * Update an existing address
  */
 const updateAddress = asyncHandler(async (req, res) => {
@@ -75,11 +87,12 @@ const setDefaultAddress = asyncHandler(async (req, res) => {
         new ApiResponse(200, 'Default address set successfully', address)
     );
 });
-//TODO: add theget default route to facilitate checkout process
+
 module.exports = {
     createAddress,
     getUserAddresses,
     getAddressById,
+    getDefaultAddress,
     updateAddress,
     deleteAddress,
     setDefaultAddress

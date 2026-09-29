@@ -29,6 +29,16 @@ const getAddressByIdService = async (userId, id) => {
     return address;
 };
 
+const getDefaultAddressService = async (userId) => {
+    const address = await Address.findOne({ userId, isDefault: true });
+
+    if (!address) {
+        throw new ApiError(404, 'Default address not found');
+    }
+
+    return address;
+};
+
 const updateAddressService = async (userId, id, updates) => {
     const address = await Address.findOne({ _id: id, userId });
 
@@ -96,6 +106,7 @@ module.exports = {
     createAddressService,
     getUserAddressesService,
     getAddressByIdService,
+    getDefaultAddressService,
     updateAddressService,
     deleteAddressService,
     setDefaultAddressService

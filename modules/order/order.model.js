@@ -66,8 +66,10 @@ const paymentSchema = new mongoose.Schema({
             PAYMENT_STATUS.PENDING,
             PAYMENT_STATUS.PAID,
             PAYMENT_STATUS.COMPLETED,
+            PAYMENT_STATUS.FAILED,
             PAYMENT_STATUS.REFUNDED
         ],
+        default: PAYMENT_STATUS.PENDING,
     },
     transactionId: {
         type: String,
@@ -105,14 +107,14 @@ const orderItemSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    price: {
+    originalPrice: {
         type: Number,
         required: true,
         min: 0,
     },
-    discountedPrice: {
+    unitPrice: {
         type: Number,
-        default: null,
+        required: true,
         min: 0,
     },
     image: {
@@ -178,11 +180,6 @@ const orderSchema = new mongoose.Schema({
         min: 0 
     },
 
-    discountValue: {
-        type: Number,
-        default: 0,
-        min: 0 
-    },
     deliveryCharges: {
         type: Number,
         default: 0,
@@ -205,6 +202,7 @@ const orderSchema = new mongoose.Schema({
         type: String,
         enum: [
             ORDER_STATUS.PENDING,
+            ORDER_STATUS.PLACED,
             ORDER_STATUS.CONFIRMED,
             ORDER_STATUS.SHIPPED,
             ORDER_STATUS.DELIVERED,
@@ -212,7 +210,7 @@ const orderSchema = new mongoose.Schema({
             ORDER_STATUS.RETURNED,
             ORDER_STATUS.OUT_FOR_DELIVERY
         ],
-        default: ORDER_STATUS.PENDING,
+        default: ORDER_STATUS.PLACED,
         index: true
     },
 

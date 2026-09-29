@@ -5,6 +5,7 @@ const {
     createAddress,
     getUserAddresses,
     getAddressById,
+    getDefaultAddress,
     updateAddress,
     deleteAddress,
     setDefaultAddress
@@ -22,7 +23,7 @@ const {
 // Create a new address
 router.post('/',
     authMiddleware,
-    validationMiddleware(createAddressSchema    ),
+    validationMiddleware(createAddressSchema),
     createAddress
 );
 
@@ -30,6 +31,12 @@ router.post('/',
 router.get('/',
     authMiddleware,
     getUserAddresses
+);
+
+// Get the default address for checkout
+router.get('/default',
+    authMiddleware,
+    getDefaultAddress
 );
 
 // Get a specific address by ID
@@ -60,5 +67,5 @@ router.patch('/:id/default',
     validationMiddleware(idParamSchema, 'params'),
     setDefaultAddress
 );
-//TODO: add the get defualt route for checkout facilitation
+
 module.exports = router;

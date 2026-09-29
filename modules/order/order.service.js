@@ -9,9 +9,21 @@ const {
 } = require('../coupons/coupon.service');
 const ORDER_STATUS = require('../../constants/order.constants');
 const { PAYMENT_METHODS, PAYMENT_STATUS } = require('../../constants/payment.constants');
+const USER_ROLES = require('../../constants/roles');
 const ApiError = require('../../utils/apiError');
 
 const getEffectivePrice = (product) => product.discountedPrice ?? product.price;
+const STOCK_RESTORE_STATUSES = [ORDER_STATUS.PLACED, ORDER_STATUS.CONFIRMED];
+const FINAL_STATUSES = [ORDER_STATUS.CANCELLED, ORDER_STATUS.RETURNED];
+const STATUS_TRANSITIONS = {
+    [ORDER_STATUS.PLACED]: [ORDER_STATUS.CONFIRMED, ORDER_STATUS.CANCELLED],
+    [ORDER_STATUS.CONFIRMED]: [ORDER_STATUS.SHIPPED, ORDER_STATUS.CANCELLED],
+    [ORDER_STATUS.SHIPPED]: [ORDER_STATUS.OUT_FOR_DELIVERY, ORDER_STATUS.DELIVERED],
+    [ORDER_STATUS.OUT_FOR_DELIVERY]: [ORDER_STATUS.DELIVERED],
+    [ORDER_STATUS.DELIVERED]: [ORDER_STATUS.RETURNED],
+    [ORDER_STATUS.CANCELLED]: [],
+    [ORDER_STATUS.RETURNED]: []
+};
 
 const generateOrderNumber = () => {
     const date = new Date();
@@ -192,8 +204,10 @@ const getMyOrdersService = async (userId) => {
         .lean();
 };
 
-const getOrderByIdService = async (userId, id) => {
-    const order = await Order.findOne({ _id: id, userId }).select('-adminNote');
+const getOrderByIdService = async (userId, id, role) => {
+    const filter = role === USER_ROLES.ADMIN ? { _id: id } : { _id: id, userId };
+    const select = role === USER_ROLES.ADMIN ? '' : '-adminNote';
+    const order = await Order.findOne(filter).select(select);
 
     if (!order) {
         throw new ApiError(404, 'Order not found');
@@ -202,8 +216,184 @@ const getOrderByIdService = async (userId, id) => {
     return order;
 };
 
+const getAllOrdersService = async (query) => {
+    const {
+        orderStatus,
+        paymentStatus,
+        page = 1,
+        limit = 10,
+        search
+    } = query;
+
+    const filter = {};
+
+    if (orderStatus) {
+        filter.orderStatus = orderStatus;
+    }
+
+    if (paymentStatus) {
+        filter['payment.status'] = paymentStatus;
+    }
+
+    if (search) {
+        filter.$or = [
+            { orderNumber: { $regex: search, $options: 'i' } },
+            { 'shippingAddress.email': { $regex: search, $options: 'i' } },
+            { 'shippingAddress.phone': { $regex: search, $options: 'i' } }
+        ];
+    }
+
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.max(1, parseInt(limit));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [orders, total] = await Promise.all([
+        Order.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limitNum)
+            .lean(),
+        Order.countDocuments(filter)
+    ]);
+
+    return {
+        orders,
+        pagination: {
+            currentPage: pageNum,
+            limit: limitNum,
+            totalItems: total,
+            totalPages: Math.ceil(total / limitNum),
+            hasNextPage: pageNum < Math.ceil(total / limitNum),
+            hasPrevPage: pageNum > 1
+        }
+    };
+};
+
+const validateStatusTransition = (currentStatus, nextStatus) => {
+    if (currentStatus === nextStatus) {
+        return;
+    }
+
+    if (FINAL_STATUSES.includes(currentStatus)) {
+        throw new ApiError(400, `Cannot update an order that is already ${currentStatus}`);
+    }
+
+    const allowedStatuses = STATUS_TRANSITIONS[currentStatus] || [];
+
+    if (!allowedStatuses.includes(nextStatus)) {
+        throw new ApiError(400, `Cannot change order status from ${currentStatus} to ${nextStatus}`);
+    }
+};
+
+const updateOrderStatusService = async (id, data) => {
+    const session = await mongoose.startSession();
+
+    try {
+        let updatedOrder;
+
+        await session.withTransaction(async () => {
+            const order = await Order.findById(id).session(session);
+
+            if (!order) {
+                throw new ApiError(404, 'Order not found');
+            }
+
+            validateStatusTransition(order.orderStatus, data.orderStatus);
+
+            if (
+                data.orderStatus === ORDER_STATUS.CANCELLED &&
+                STOCK_RESTORE_STATUSES.includes(order.orderStatus)
+            ) {
+                for (const item of order.orderItems) {
+                    await Product.updateOne(
+                        { _id: item.productId },
+                        { $inc: { stock: item.quantity } },
+                        { session }
+                    );
+                }
+            }
+
+            order.orderStatus = data.orderStatus;
+
+            if (data.trackingNumber !== undefined) {
+                order.trackingNumber = data.trackingNumber || null;
+            }
+
+            if (data.trackingUrl !== undefined) {
+                order.trackingUrl = data.trackingUrl || null;
+            }
+
+            if (data.adminNote !== undefined) {
+                order.adminNote = data.adminNote;
+            }
+
+            if (data.orderStatus === ORDER_STATUS.DELIVERED) {
+                order.deliveryDate = new Date();
+                if (order.payment.method === PAYMENT_METHODS.COD) {
+                    order.payment.status = PAYMENT_STATUS.PAID;
+                    order.payment.paidAt = new Date();
+                }
+            }
+
+            await order.save({ session });
+            updatedOrder = order;
+        });
+
+        return updatedOrder;
+    } finally {
+        await session.endSession();
+    }
+};
+
+const cancelMyOrderService = async (userId, id, data) => {
+    const session = await mongoose.startSession();
+
+    try {
+        let cancelledOrder;
+
+        await session.withTransaction(async () => {
+            const order = await Order.findOne({ _id: id, userId }).session(session);
+
+            if (!order) {
+                throw new ApiError(404, 'Order not found');
+            }
+
+            if (!STOCK_RESTORE_STATUSES.includes(order.orderStatus)) {
+                throw new ApiError(400, `Cannot cancel an order that is already ${order.orderStatus}`);
+            }
+
+            if (order.payment.status === PAYMENT_STATUS.PAID) {
+                throw new ApiError(400, 'Paid orders cannot be cancelled from customer account');
+            }
+
+            for (const item of order.orderItems) {
+                await Product.updateOne(
+                    { _id: item.productId },
+                    { $inc: { stock: item.quantity } },
+                    { session }
+                );
+            }
+
+            order.orderStatus = ORDER_STATUS.CANCELLED;
+            order.adminNote = data.cancellationReason
+                ? `Customer cancellation reason: ${data.cancellationReason}`
+                : order.adminNote;
+
+            await order.save({ session });
+            cancelledOrder = order;
+        });
+
+        return cancelledOrder;
+    } finally {
+        await session.endSession();
+    }
+};
+
 module.exports = {
     createCodOrderService,
     getMyOrdersService,
-    getOrderByIdService
+    getOrderByIdService,
+    getAllOrdersService,
+    updateOrderStatusService,
+    cancelMyOrderService
 };

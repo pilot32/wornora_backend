@@ -1,6 +1,7 @@
 const Joi = require('joi');
 const ORDER_STATUS = require('../constants/order.constants');
 const { PAYMENT_METHODS } = require('../constants/payment.constants');
+const { PAYMENT_STATUS } = require('../constants/payment.constants');
 
 const objectId = Joi.string()
     .pattern(/^[0-9a-fA-F]{24}$/)
@@ -35,6 +36,44 @@ const orderIdParamSchema = Joi.object({
         })
 });
 
+const getAllOrdersSchema = Joi.object({
+    orderStatus: Joi.string()
+        .valid(
+            ORDER_STATUS.PLACED,
+            ORDER_STATUS.CONFIRMED,
+            ORDER_STATUS.SHIPPED,
+            ORDER_STATUS.OUT_FOR_DELIVERY,
+            ORDER_STATUS.DELIVERED,
+            ORDER_STATUS.CANCELLED,
+            ORDER_STATUS.RETURNED
+        )
+        .optional(),
+    paymentStatus: Joi.string()
+        .valid(
+            PAYMENT_STATUS.PENDING,
+            PAYMENT_STATUS.PAID,
+            PAYMENT_STATUS.COMPLETED,
+            PAYMENT_STATUS.FAILED,
+            PAYMENT_STATUS.REFUNDED
+        )
+        .optional(),
+    page: Joi.number()
+        .integer()
+        .min(1)
+        .default(1)
+        .optional(),
+    limit: Joi.number()
+        .integer()
+        .min(1)
+        .max(100)
+        .default(10)
+        .optional(),
+    search: Joi.string()
+        .trim()
+        .allow('')
+        .optional()
+});
+
 const updateOrderStatusSchema = Joi.object({
     orderStatus: Joi.string()
         .valid(
@@ -63,8 +102,18 @@ const updateOrderStatusSchema = Joi.object({
         .optional()
 });
 
+const cancelOrderSchema = Joi.object({
+    cancellationReason: Joi.string()
+        .trim()
+        .max(500)
+        .allow('')
+        .optional()
+});
+
 module.exports = {
     createOrderSchema,
     orderIdParamSchema,
-    updateOrderStatusSchema
+    getAllOrdersSchema,
+    updateOrderStatusSchema,
+    cancelOrderSchema
 };

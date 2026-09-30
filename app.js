@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
 const authRoutes = require('./modules/auth/auth.route');
 const categoryRoutes = require('./modules/categories/category.route');
 const subCategoryRoutes = require('./modules/subcategories/subcategory.route');
@@ -11,6 +13,7 @@ const addressRoutes = require('./modules/address/address.route');
 const homeRoutes = require('./modules/home/home.route');
 const orderRoutes = require('./modules/order/order.routes');
 const reviewRoutes = require('./modules/reviews/review.route');
+const wishlistRoutes = require('./modules/wishlist/wishlist.route');
 const errorMiddleware = require('./middlewares/error.middleware');
 const app = express();
 
@@ -39,6 +42,8 @@ app.use(cors({
     credentials: !allowAllOrigins
 }));
 app.use(express.json());
+app.get('/api-docs.json', (req, res) => res.json(swaggerSpec));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/auth', authRoutes);
 
 app.use('/api/categories', categoryRoutes);
@@ -51,6 +56,7 @@ app.use('/api/addresses', addressRoutes);
 app.use('/api/home', homeRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/wishlist', wishlistRoutes);
 app.use(errorMiddleware);
 
 module.exports = app;

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const validationMiddleware = require('../../middlewares/validation.middleware');
 
 
 const
@@ -7,9 +8,14 @@ const
     getFeaturedProducts,
     getNewArrivals,
     getProductById} = require('./customer.controller');
+const {
+    getCustomerProductsSchema,
+    customerProductIdSchema
+} = require('../../validations/customer.validation');
 
 router.get(
     '/products',
+    validationMiddleware(getCustomerProductsSchema, 'query'),
     getAllProducts,
 );
 router.get(
@@ -22,6 +28,7 @@ router.get(
 );
 router.get(
     '/products/:id',
+    validationMiddleware(customerProductIdSchema, 'params'),
     getProductById,
 );
 

@@ -12,6 +12,13 @@ const getAllProducts = async (req,res)=>{
             categoryId,
             subcategoryId,
             search,
+            featured,
+            inStock,
+            minPrice,
+            maxPrice,
+            minRating,
+            sortBy = 'createdAt',
+            sortOrder = 'desc'
         } = req.query;
 
         const filter = {
@@ -24,19 +31,37 @@ const getAllProducts = async (req,res)=>{
         if(subcategoryId){
             filter.subcategoryId=subcategoryId;
         }
-        if(search){
-            filter.name = {
-                $regex: search,
-                $options: 'i',
-            };
+        if(featured !== undefined){
+            filter.featured = featured;
         }
+        if(inStock === true){
+            filter.stock = { $gt: 0 };
+        }
+        if(minRating !== undefined){
+            filter.averageRating = { $gte: Number(minRating) };
+        }
+        if(search){
+            filter.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } },
+                { slug: { $regex: search, $options: 'i' } }
+            ];
+        }
+        if(minPrice !== undefined || maxPrice !== undefined){
+            filter.price = {};
+            if(minPrice !== undefined) filter.price.$gte = Number(minPrice);
+            if(maxPrice !== undefined) filter.price.$lte = Number(maxPrice);
+        }
+
+        const sort = {};
+        sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
         const products = await Product.find(filter)
             .skip(skip)
             .limit(limit)
-            .populate('categoryId','name')
-            .populate('subcategoryId','name')
-            .sort({createdAt: -1});
+            .populate('categoryId','name slug')
+            .populate('subcategoryId','name slug')
+            .sort(sort);
 
         const total = await Product.countDocuments(filter);
 

@@ -1,6 +1,8 @@
 const Product = require('../products/products.model');
 const { getPagination } = require('../../utils/pagination');
 
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /**
  * Function to return the all active producst from the
  * Database.Which will serve the front-end for the homepage and products page too.
@@ -14,6 +16,10 @@ const getAllProducts = async (req,res)=>{
             search,
             featured,
             inStock,
+            style,
+            color,
+            size,
+            tag,
             minPrice,
             maxPrice,
             minRating,
@@ -34,6 +40,18 @@ const getAllProducts = async (req,res)=>{
         if(featured !== undefined){
             filter.featured = featured;
         }
+        if(style){
+            filter.style = { $regex: `^${escapeRegex(style)}$`, $options: 'i' };
+        }
+        if(color){
+            filter['colors.name'] = { $regex: `^${escapeRegex(color)}$`, $options: 'i' };
+        }
+        if(size){
+            filter.sizes = { $regex: `^${escapeRegex(size)}$`, $options: 'i' };
+        }
+        if(tag){
+            filter.tags = { $regex: `^${escapeRegex(tag)}$`, $options: 'i' };
+        }
         if(inStock === true){
             filter.stock = { $gt: 0 };
         }
@@ -44,7 +62,11 @@ const getAllProducts = async (req,res)=>{
             filter.$or = [
                 { name: { $regex: search, $options: 'i' } },
                 { description: { $regex: search, $options: 'i' } },
-                { slug: { $regex: search, $options: 'i' } }
+                { slug: { $regex: search, $options: 'i' } },
+                { style: { $regex: search, $options: 'i' } },
+                { material: { $regex: search, $options: 'i' } },
+                { tags: { $regex: search, $options: 'i' } },
+                { 'colors.name': { $regex: search, $options: 'i' } }
             ];
         }
         if(minPrice !== undefined || maxPrice !== undefined){

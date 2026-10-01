@@ -30,6 +30,22 @@ const getCustomerProductsSchema = Joi.object({
         .trim()
         .allow('')
         .optional(),
+    style: Joi.string()
+        .trim()
+        .allow('')
+        .optional(),
+    color: Joi.string()
+        .trim()
+        .allow('')
+        .optional(),
+    size: Joi.string()
+        .trim()
+        .allow('')
+        .optional(),
+    tag: Joi.string()
+        .trim()
+        .allow('')
+        .optional(),
     minPrice: Joi.number()
         .min(0)
         .optional(),

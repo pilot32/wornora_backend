@@ -5,6 +5,7 @@ const slugify = require('slugify');
 const ApiError = require('../../utils/apiError');
 
 const parseBooleanFilter = (value) => value === true || value === 'true';
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const createProductService = async (data) => {
     const {
@@ -16,6 +17,12 @@ const createProductService = async (data) => {
         discountedPrice,
         stock,
         images,
+        style,
+        material,
+        colors,
+        sizes,
+        tags,
+        careInstructions,
         isActive,
         featured,
     } = data;
@@ -63,6 +70,12 @@ const createProductService = async (data) => {
         discountedPrice: discountedPrice ?? null,
         stock: stock ?? 0,
         images: images || [],
+        style: style || '',
+        material: material || '',
+        colors: colors || [],
+        sizes: sizes || [],
+        tags: tags || [],
+        careInstructions: careInstructions || '',
         isActive: isActive !== undefined ? isActive : true,
         featured: featured !== undefined ? featured : false
     });
@@ -84,6 +97,10 @@ const getAllProductsService = async (query) => {
         page = 1,
         limit = 10,
         search,
+        style,
+        color,
+        size,
+        tag,
         minPrice,
         maxPrice,
         sortBy = 'createdAt',
@@ -95,11 +112,19 @@ const getAllProductsService = async (query) => {
     if (subcategoryId) filter.subcategoryId = subcategoryId;
     if (featured !== undefined) filter.featured = parseBooleanFilter(featured);
     if (isActive !== undefined) filter.isActive = parseBooleanFilter(isActive);
+    if (style) filter.style = { $regex: `^${escapeRegex(style)}$`, $options: 'i' };
+    if (color) filter['colors.name'] = { $regex: `^${escapeRegex(color)}$`, $options: 'i' };
+    if (size) filter.sizes = { $regex: `^${escapeRegex(size)}$`, $options: 'i' };
+    if (tag) filter.tags = { $regex: `^${escapeRegex(tag)}$`, $options: 'i' };
 
     if (search) {
         filter.$or = [
             { name: { $regex: search, $options: 'i' } },
-            { description: { $regex: search, $options: 'i' } }
+            { description: { $regex: search, $options: 'i' } },
+            { style: { $regex: search, $options: 'i' } },
+            { material: { $regex: search, $options: 'i' } },
+            { tags: { $regex: search, $options: 'i' } },
+            { 'colors.name': { $regex: search, $options: 'i' } }
         ];
     }
     if (minPrice !== undefined || maxPrice !== undefined) {

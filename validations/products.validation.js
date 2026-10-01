@@ -1,4 +1,98 @@
 const Joi = require('joi');
+
+const colorSchema = Joi.object({
+    name: Joi.string()
+    .trim()
+    .min(1)
+    .max(50)
+    .required()
+    .messages({
+        'string.empty': 'Color name is required',
+        'string.max': 'Color name cannot exceed 50 characters',
+        'any.required': 'Color name is required'
+    }),
+
+    hex: Joi.string()
+    .trim()
+    .pattern(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/)
+    .allow('')
+    .optional()
+    .messages({
+        'string.pattern.base': 'Color hex must be a valid hex color'
+    })
+});
+
+const productAttributeFields = {
+    style: Joi.string()
+    .trim()
+    .max(80)
+    .allow('')
+    .optional()
+    .messages({
+        'string.max': 'Style cannot exceed 80 characters'
+    }),
+
+    material: Joi.string()
+    .trim()
+    .max(120)
+    .allow('')
+    .optional()
+    .messages({
+        'string.max': 'Material cannot exceed 120 characters'
+    }),
+
+    colors: Joi.array()
+    .items(colorSchema)
+    .max(20)
+    .optional()
+    .messages({
+        'array.base': 'Colors must be an array',
+        'array.max': 'A product cannot have more than 20 colors'
+    }),
+
+    sizes: Joi.array()
+    .items(
+        Joi.string()
+        .trim()
+        .max(20)
+        .messages({
+            'string.max': 'Size cannot exceed 20 characters'
+        })
+    )
+    .max(30)
+    .optional()
+    .messages({
+        'array.base': 'Sizes must be an array',
+        'array.max': 'A product cannot have more than 30 sizes'
+    }),
+
+    tags: Joi.array()
+    .items(
+        Joi.string()
+        .trim()
+        .lowercase()
+        .max(40)
+        .messages({
+            'string.max': 'Tag cannot exceed 40 characters'
+        })
+    )
+    .max(30)
+    .optional()
+    .messages({
+        'array.base': 'Tags must be an array',
+        'array.max': 'A product cannot have more than 30 tags'
+    }),
+
+    careInstructions: Joi.string()
+    .trim()
+    .max(1000)
+    .allow('')
+    .optional()
+    .messages({
+        'string.max': 'Care instructions cannot exceed 1000 characters'
+    })
+};
+
 //create product schema 
 const createProductSchema = Joi.object({
     name: Joi.string()
@@ -87,7 +181,13 @@ const createProductSchema = Joi.object({
 
     isActive: Joi.boolean()
     .default(true)
-    .optional()
+    .optional(),
+
+    featured: Joi.boolean()
+    .default(false)
+    .optional(),
+
+    ...productAttributeFields
 
 })
 .custom((value, helpers) => {
@@ -189,7 +289,9 @@ const updateProductSchema = Joi.object({
     .optional(),
 
     featured: Joi.boolean()
-    .optional()
+    .optional(),
+
+    ...productAttributeFields
 })
 .min(1)
 .custom((value, helpers) => {
@@ -288,6 +390,26 @@ const getAllProductsSchema = Joi.object({
     .optional(),
 
     search: Joi.string()
+    .trim()
+    .optional()
+    .allow(''),
+
+    style: Joi.string()
+    .trim()
+    .optional()
+    .allow(''),
+
+    color: Joi.string()
+    .trim()
+    .optional()
+    .allow(''),
+
+    size: Joi.string()
+    .trim()
+    .optional()
+    .allow(''),
+
+    tag: Joi.string()
     .trim()
     .optional()
     .allow(''),

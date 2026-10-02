@@ -14,6 +14,7 @@ const homeRoutes = require('./modules/home/home.route');
 const orderRoutes = require('./modules/order/order.routes');
 const reviewRoutes = require('./modules/reviews/review.route');
 const wishlistRoutes = require('./modules/wishlist/wishlist.route');
+const adminDashboardRoutes = require('./modules/admin/admin-dashboard.route');
 const errorMiddleware = require('./middlewares/error.middleware');
 const app = express();
 
@@ -57,6 +58,7 @@ app.use('/api/home', homeRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/admin', adminDashboardRoutes);
 app.use(errorMiddleware);
 
 module.exports = app;

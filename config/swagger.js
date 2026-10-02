@@ -123,6 +123,10 @@ addPaths(paths, '/api/wishlist', [
     { path: '/:productId', methods: ['delete'], summary: 'Remove a product from the wishlist' }
 ], true, 'Wishlist');
 
+addPaths(paths, '/api/admin', [
+    { path: '/dashboard', methods: ['get'], summary: 'Get admin dashboard analytics' }
+], true, 'Admin');
+
 const swaggerSpec = swaggerJsdoc({
     definition: {
         openapi: '3.0.3',

@@ -7,6 +7,7 @@ const { getAddressByIdService } = require('../address/address.service');
 const {
     validateCouponForCartService
 } = require('../coupons/coupon.service');
+const { quoteCartShipment } = require('../shipping/shipping.service');
 const ORDER_STATUS = require('../../constants/order.constants');
 const { PAYMENT_METHODS, PAYMENT_STATUS } = require('../../constants/payment.constants');
 const USER_ROLES = require('../../constants/roles');
@@ -63,6 +64,17 @@ const buildOrderItems = (cart) => cart.items.map((item) => {
         quantity: item.quantity,
         totalPrice: unitPrice * item.quantity
     };
+});
+
+const buildShippingQuoteSnapshot = (quote) => ({
+    provider: quote.provider,
+    providerQuoteId: quote.providerQuoteId,
+    courierId: quote.recommendedCourier.courierId,
+    courierName: quote.recommendedCourier.courierName,
+    chargeableWeightKg: quote.shipment.chargeableWeightKg,
+    estimatedDeliveryDays: quote.recommendedCourier.estimatedDeliveryDays,
+    isEstimated: quote.isEstimated,
+    quotedAt: new Date()
 });
 
 const validateCartItems = (cart) => {
@@ -139,7 +151,13 @@ const createCodOrderService = async (userId, data) => {
         discountAmount = couponResult.discount;
     }
 
-    const deliveryCharges = 0;
+    const shippingQuote = await quoteCartShipment({
+        cart,
+        shippingAddress,
+        paymentMethod,
+        declaredValue: Math.max(subTotal - discountAmount, 0)
+    });
+    const deliveryCharges = shippingQuote.deliveryCharge;
     const tax = 0;
     const grandTotal = Math.max(subTotal - discountAmount + deliveryCharges + tax, 0);
     const orderNumber = await createUniqueOrderNumber();
@@ -176,6 +194,7 @@ const createCodOrderService = async (userId, data) => {
                 subTotal,
                 discountAmount,
                 deliveryCharges,
+                shippingQuote: buildShippingQuoteSnapshot(shippingQuote),
                 tax,
                 grandTotal,
                 orderStatus: ORDER_STATUS.PLACED,

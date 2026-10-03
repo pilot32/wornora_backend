@@ -123,6 +123,10 @@ addPaths(paths, '/api/wishlist', [
     { path: '/:productId', methods: ['delete'], summary: 'Remove a product from the wishlist' }
 ], true, 'Wishlist');
 
+addPaths(paths, '/api/shipping', [
+    { path: '/quote', methods: ['post'], summary: 'Get a shipping quote for the current cart' }
+], true, 'Shipping');
+
 addPaths(paths, '/api/admin', [
     { path: '/dashboard', methods: ['get'], summary: 'Get admin dashboard analytics' }
 ], true, 'Admin');

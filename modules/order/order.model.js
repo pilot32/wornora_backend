@@ -132,6 +132,50 @@ const orderItemSchema = new mongoose.Schema({
     },
 });
 
+const shippingQuoteSchema = new mongoose.Schema({
+    provider: {
+        type: String,
+        default: ''
+    },
+    providerQuoteId: {
+        type: String,
+        default: ''
+    },
+    courierId: {
+        type: String,
+        default: ''
+    },
+    courierName: {
+        type: String,
+        default: ''
+    },
+    chargeableWeightKg: {
+        type: Number,
+        default: null,
+        min: 0
+    },
+    estimatedDeliveryDays: {
+        min: {
+            type: Number,
+            default: null,
+            min: 0
+        },
+        max: {
+            type: Number,
+            default: null,
+            min: 0
+        }
+    },
+    isEstimated: {
+        type: Boolean,
+        default: false
+    },
+    quotedAt: {
+        type: Date,
+        default: null
+    }
+}, { _id: false });
+
 const orderSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -184,6 +228,11 @@ const orderSchema = new mongoose.Schema({
         type: Number,
         default: 0,
         min: 0
+    },
+
+    shippingQuote: {
+        type: shippingQuoteSchema,
+        default: undefined
     },
 
     tax: {

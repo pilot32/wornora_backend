@@ -11,6 +11,10 @@ const ORDER_STATUS = require('../../constants/order.constants');
 const { PAYMENT_METHODS, PAYMENT_STATUS } = require('../../constants/payment.constants');
 const USER_ROLES = require('../../constants/roles');
 const ApiError = require('../../utils/apiError');
+const {
+    notifyOrderPlaced,
+    notifyOrderStatusChanged,
+} = require('../notifications/order-notification.service');
 
 const getEffectivePrice = (product) => product.discountedPrice ?? product.price;
 const STOCK_RESTORE_STATUSES = [ORDER_STATUS.PLACED, ORDER_STATUS.CONFIRMED];
@@ -191,6 +195,7 @@ const createCodOrderService = async (userId, data) => {
             createdOrder = order;
         });
 
+        notifyOrderPlaced(createdOrder);
         return createdOrder;
     } finally {
         await session.endSession();
@@ -290,6 +295,7 @@ const updateOrderStatusService = async (id, data) => {
 
     try {
         let updatedOrder;
+        let statusChanged = false;
 
         await session.withTransaction(async () => {
             const order = await Order.findById(id).session(session);
@@ -299,6 +305,7 @@ const updateOrderStatusService = async (id, data) => {
             }
 
             validateStatusTransition(order.orderStatus, data.orderStatus);
+            statusChanged = order.orderStatus !== data.orderStatus;
 
             if (
                 data.orderStatus === ORDER_STATUS.CANCELLED &&
@@ -338,6 +345,10 @@ const updateOrderStatusService = async (id, data) => {
             await order.save({ session });
             updatedOrder = order;
         });
+
+        if (statusChanged) {
+            notifyOrderStatusChanged(updatedOrder);
+        }
 
         return updatedOrder;
     } finally {
@@ -383,6 +394,7 @@ const cancelMyOrderService = async (userId, id, data) => {
             cancelledOrder = order;
         });
 
+        notifyOrderStatusChanged(cancelledOrder);
         return cancelledOrder;
     } finally {
         await session.endSession();

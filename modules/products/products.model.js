@@ -18,6 +18,34 @@ const colorSchema = new mongoose.Schema(
     }
 );
 
+const shippingDimensionsSchema = new mongoose.Schema(
+    {
+        weightKg: {
+            type: Number,
+            required: true,
+            min: 0.01
+        },
+        lengthCm: {
+            type: Number,
+            required: true,
+            min: 0.1
+        },
+        widthCm: {
+            type: Number,
+            required: true,
+            min: 0.1
+        },
+        heightCm: {
+            type: Number,
+            required: true,
+            min: 0.1
+        }
+    },
+    {
+        _id: false
+    }
+);
+
 const productSchema = new mongoose.Schema(
     {
         name: {
@@ -102,6 +130,11 @@ const productSchema = new mongoose.Schema(
             type: String,
             trim: true,
             default: ''
+        },
+
+        shippingDimensions: {
+            type: shippingDimensionsSchema,
+            default: undefined
         },
 
         isActive: {

@@ -90,6 +90,48 @@ const productAttributeFields = {
     .optional()
     .messages({
         'string.max': 'Care instructions cannot exceed 1000 characters'
+    }),
+
+    shippingDimensions: Joi.object({
+        weightKg: Joi.number()
+        .min(0.01)
+        .required()
+        .messages({
+            'number.base': 'Package weight must be a number',
+            'number.min': 'Package weight must be at least 0.01 kg',
+            'any.required': 'Package weight is required when shipping dimensions are provided'
+        }),
+
+        lengthCm: Joi.number()
+        .min(0.1)
+        .required()
+        .messages({
+            'number.base': 'Package length must be a number',
+            'number.min': 'Package length must be at least 0.1 cm',
+            'any.required': 'Package length is required when shipping dimensions are provided'
+        }),
+
+        widthCm: Joi.number()
+        .min(0.1)
+        .required()
+        .messages({
+            'number.base': 'Package width must be a number',
+            'number.min': 'Package width must be at least 0.1 cm',
+            'any.required': 'Package width is required when shipping dimensions are provided'
+        }),
+
+        heightCm: Joi.number()
+        .min(0.1)
+        .required()
+        .messages({
+            'number.base': 'Package height must be a number',
+            'number.min': 'Package height must be at least 0.1 cm',
+            'any.required': 'Package height is required when shipping dimensions are provided'
+        })
+    })
+    .optional()
+    .messages({
+        'object.base': 'Shipping dimensions must be an object'
     })
 };
 

@@ -23,6 +23,7 @@ const createProductService = async (data) => {
         sizes,
         tags,
         careInstructions,
+        shippingDimensions,
         isActive,
         featured,
     } = data;
@@ -76,6 +77,7 @@ const createProductService = async (data) => {
         sizes: sizes || [],
         tags: tags || [],
         careInstructions: careInstructions || '',
+        shippingDimensions,
         isActive: isActive !== undefined ? isActive : true,
         featured: featured !== undefined ? featured : false
     });

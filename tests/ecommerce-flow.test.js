@@ -130,7 +130,13 @@ describe('e-commerce API smoke flow', () => {
                 subcategoryId,
                 price: 1000,
                 discountedPrice: 800,
-                stock
+                stock,
+                shippingDimensions: {
+                    weightKg: 0.25,
+                    lengthCm: 20,
+                    widthCm: 15,
+                    heightCm: 5
+                }
             });
 
         response = await createProduct(`${marker} Product One`, `${marker.toLowerCase()}-product-one`, 5);
@@ -187,6 +193,17 @@ describe('e-commerce API smoke flow', () => {
         expect(response.body.summary.grandTotal).toBe(1500);
 
         response = await request(app)
+            .post('/api/shipping/quote')
+            .set(auth(customerToken))
+            .send({ shippingAddressId: addressId, paymentMethod: 'COD' });
+        expect(response.status).toBe(200);
+        expect(response.body.data.provider).toBe('mock');
+        expect(response.body.data.serviceable).toBe(true);
+        expect(response.body.data.deliveryCharge).toBeGreaterThan(0);
+        expect(response.body.data.shipment.usedFallbackDimensions).toBe(false);
+        const quotedDeliveryCharge = response.body.data.deliveryCharge;
+
+        response = await request(app)
             .post('/api/orders')
             .set(auth(customerToken))
             .send({ shippingAddressId: addressId, paymentMethod: 'COD', deliveryNotes: `${marker} delivery` });
@@ -198,7 +215,9 @@ describe('e-commerce API smoke flow', () => {
         expect(firstOrder.payment.status).toBe('PENDING');
         expect(firstOrder.subTotal).toBe(1600);
         expect(firstOrder.discountAmount).toBe(100);
-        expect(firstOrder.grandTotal).toBe(1500);
+        expect(firstOrder.deliveryCharges).toBe(quotedDeliveryCharge);
+        expect(firstOrder.grandTotal).toBe(1500 + quotedDeliveryCharge);
+        expect(firstOrder.shippingQuote.provider).toBe('mock');
 
         expect((await Product.findById(productId)).stock).toBe(3);
         expect((await Cart.findOne({ userId: customer._id })).items).toHaveLength(0);

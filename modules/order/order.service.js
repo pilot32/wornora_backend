@@ -10,6 +10,7 @@ const {
 const { quoteCartShipment } = require('../shipping/shipping.service');
 const {
     createRazorpayOrder,
+    getRazorpayKeyId,
     verifyRazorpayPaymentSignature
 } = require('../payments/razorpay.gateway');
 const ORDER_STATUS = require('../../constants/order.constants');
@@ -117,6 +118,24 @@ const createUniqueOrderNumber = async () => {
     throw new ApiError(500, 'Could not generate order number');
 };
 
+const normalizeCheckoutRequestId = (checkoutRequestId) => (
+    typeof checkoutRequestId === 'string' && checkoutRequestId.trim()
+        ? checkoutRequestId.trim()
+        : undefined
+);
+
+const findExistingCheckoutOrder = (userId, checkoutRequestId) => {
+    if (!checkoutRequestId) {
+        return null;
+    }
+
+    return Order.findOne({ userId, checkoutRequestId });
+};
+
+const isDuplicateCheckoutRequest = (error) => (
+    error?.code === 11000 && error?.keyPattern?.checkoutRequestId
+);
+
 const getCheckoutDetails = async (userId, data, paymentMethod) => {
     const [user, cart, shippingAddress, billingAddress] = await Promise.all([
         User.findById(userId),
@@ -176,11 +195,17 @@ const getCheckoutDetails = async (userId, data, paymentMethod) => {
     };
 };
 
-const createCodOrderService = async (userId, data) => {
+const createCodOrderService = async (userId, data, checkoutRequestId) => {
     const paymentMethod = data.paymentMethod || PAYMENT_METHODS.COD;
+    const normalizedCheckoutRequestId = normalizeCheckoutRequestId(checkoutRequestId);
 
     if (paymentMethod !== PAYMENT_METHODS.COD) {
         throw new ApiError(400, 'Only COD orders are supported right now');
+    }
+
+    const existingOrder = await findExistingCheckoutOrder(userId, normalizedCheckoutRequestId);
+    if (existingOrder) {
+        return existingOrder;
     }
 
     const [user, cart, shippingAddress, billingAddress] = await Promise.all([
@@ -251,6 +276,7 @@ const createCodOrderService = async (userId, data) => {
             const [order] = await Order.create([{
                 userId,
                 orderNumber,
+                checkoutRequestId: normalizedCheckoutRequestId,
                 orderItems,
                 shippingAddress: buildAddressSnapshot(shippingAddress, user.email),
                 billingAddress: buildAddressSnapshot(billingAddress, user.email),
@@ -280,13 +306,43 @@ const createCodOrderService = async (userId, data) => {
 
         notifyOrderPlaced(createdOrder);
         return createdOrder;
+    } catch (error) {
+        if (isDuplicateCheckoutRequest(error)) {
+            const duplicateOrder = await findExistingCheckoutOrder(userId, normalizedCheckoutRequestId);
+            if (duplicateOrder) {
+                return duplicateOrder;
+            }
+        }
+
+        throw error;
     } finally {
         await session.endSession();
     }
 };
 
-const createRazorpayPaymentOrderService = async (userId, data) => {
+const buildRazorpayPaymentOrderResponse = (order, keyId) => ({
+    orderId: order._id,
+    orderNumber: order.orderNumber,
+    amount: order.payment.paymentDetails?.amount,
+    currency: order.payment.paymentDetails?.currency,
+    razorpayOrderId: order.payment.paymentDetails?.razorpayOrderId,
+    keyId,
+    customer: {
+        name: order.shippingAddress.fullName,
+        email: order.shippingAddress.email,
+        contact: order.shippingAddress.phone
+    }
+});
+
+const createRazorpayPaymentOrderService = async (userId, data, checkoutRequestId) => {
     const paymentMethod = PAYMENT_METHODS.RAZORPAY;
+    const normalizedCheckoutRequestId = normalizeCheckoutRequestId(checkoutRequestId);
+    const existingOrder = await findExistingCheckoutOrder(userId, normalizedCheckoutRequestId);
+
+    if (existingOrder) {
+        return buildRazorpayPaymentOrderResponse(existingOrder, getRazorpayKeyId());
+    }
+
     const checkout = await getCheckoutDetails(userId, data, paymentMethod);
     const orderNumber = await createUniqueOrderNumber();
     const amountInPaise = Math.round(checkout.grandTotal * 100);
@@ -299,45 +355,46 @@ const createRazorpayPaymentOrderService = async (userId, data) => {
         }
     });
 
-    const order = await Order.create({
-        userId,
-        orderNumber,
-        orderItems: checkout.orderItems,
-        shippingAddress: buildAddressSnapshot(checkout.shippingAddress, checkout.user.email),
-        billingAddress: buildAddressSnapshot(checkout.billingAddress, checkout.user.email),
-        appliedCoupon: checkout.appliedCoupon,
-        subTotal: checkout.subTotal,
-        discountAmount: checkout.discountAmount,
-        deliveryCharges: checkout.deliveryCharges,
-        shippingQuote: buildShippingQuoteSnapshot(checkout.shippingQuote),
-        tax: checkout.tax,
-        grandTotal: checkout.grandTotal,
-        orderStatus: ORDER_STATUS.PENDING,
-        payment: {
-            method: PAYMENT_METHODS.RAZORPAY,
-            status: PAYMENT_STATUS.PENDING,
-            paymentDetails: {
-                razorpayOrderId: razorpayOrder.id,
-                amount: amountInPaise,
-                currency: razorpayOrder.currency
+    let order;
+    try {
+        order = await Order.create({
+            userId,
+            orderNumber,
+            checkoutRequestId: normalizedCheckoutRequestId,
+            orderItems: checkout.orderItems,
+            shippingAddress: buildAddressSnapshot(checkout.shippingAddress, checkout.user.email),
+            billingAddress: buildAddressSnapshot(checkout.billingAddress, checkout.user.email),
+            appliedCoupon: checkout.appliedCoupon,
+            subTotal: checkout.subTotal,
+            discountAmount: checkout.discountAmount,
+            deliveryCharges: checkout.deliveryCharges,
+            shippingQuote: buildShippingQuoteSnapshot(checkout.shippingQuote),
+            tax: checkout.tax,
+            grandTotal: checkout.grandTotal,
+            orderStatus: ORDER_STATUS.PENDING,
+            payment: {
+                method: PAYMENT_METHODS.RAZORPAY,
+                status: PAYMENT_STATUS.PENDING,
+                paymentDetails: {
+                    razorpayOrderId: razorpayOrder.id,
+                    amount: amountInPaise,
+                    currency: razorpayOrder.currency
+                }
+            },
+            deliveryNotes: data.deliveryNotes || ''
+        });
+    } catch (error) {
+        if (isDuplicateCheckoutRequest(error)) {
+            const duplicateOrder = await findExistingCheckoutOrder(userId, normalizedCheckoutRequestId);
+            if (duplicateOrder) {
+                return buildRazorpayPaymentOrderResponse(duplicateOrder, keyId);
             }
-        },
-        deliveryNotes: data.deliveryNotes || ''
-    });
-
-    return {
-        orderId: order._id,
-        orderNumber: order.orderNumber,
-        amount: amountInPaise,
-        currency: razorpayOrder.currency,
-        razorpayOrderId: razorpayOrder.id,
-        keyId,
-        customer: {
-            name: checkout.user.name,
-            email: checkout.user.email,
-            contact: checkout.shippingAddress.phone
         }
-    };
+
+        throw error;
+    }
+
+    return buildRazorpayPaymentOrderResponse(order, keyId);
 };
 
 const verifyRazorpayPaymentService = async (userId, data) => {

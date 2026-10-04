@@ -191,6 +191,15 @@ const orderSchema = new mongoose.Schema({
         index: true,
     },
 
+    // Links a browser checkout attempt to exactly one local order. It is
+    // optional so orders created before this protection remain valid.
+    checkoutRequestId: {
+        type: String,
+        trim: true,
+        maxlength: 100,
+        default: undefined
+    },
+
     orderItems: [orderItemSchema],
 
     shippingAddress: {
@@ -299,5 +308,12 @@ const orderSchema = new mongoose.Schema({
     },
 },
 {timestamps: true});
+
+// A repeated request with the same idempotency key must resolve to the same
+// order, even when both requests reach the server concurrently.
+orderSchema.index(
+    { userId: 1, checkoutRequestId: 1 },
+    { unique: true, sparse: true }
+);
 
 module.exports = mongoose.model('Order', orderSchema);

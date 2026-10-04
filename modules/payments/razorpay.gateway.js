@@ -18,6 +18,8 @@ const getAuthorizationHeader = ({ keyId, keySecret }) => (
     `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString('base64')}`
 );
 
+const getRazorpayKeyId = () => getCredentials().keyId;
+
 const createRazorpayOrder = async ({ amount, receipt, notes }) => {
     const credentials = getCredentials();
     const response = await fetch(`${RAZORPAY_API_URL}/orders`, {
@@ -61,5 +63,6 @@ const verifyRazorpayPaymentSignature = ({ razorpayOrderId, razorpayPaymentId, ra
 
 module.exports = {
     createRazorpayOrder,
+    getRazorpayKeyId,
     verifyRazorpayPaymentSignature
 };

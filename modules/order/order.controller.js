@@ -10,7 +10,11 @@ const {
 } = require('./order.service');
 
 const createOrder = asyncHandler(async (req, res) => {
-    const order = await createCodOrderService(req.user.userId, req.body);
+    const order = await createCodOrderService(
+        req.user.userId,
+        req.body,
+        req.get('Idempotency-Key')
+    );
 
     res.status(201).json(
         new ApiResponse(201, 'Order placed successfully', { order })

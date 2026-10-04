@@ -6,7 +6,11 @@ const {
 } = require('../order/order.service');
 
 const createRazorpayPaymentOrder = asyncHandler(async (req, res) => {
-    const paymentOrder = await createRazorpayPaymentOrderService(req.user.userId, req.body);
+    const paymentOrder = await createRazorpayPaymentOrderService(
+        req.user.userId,
+        req.body,
+        req.get('Idempotency-Key')
+    );
 
     res.status(201).json(
         new ApiResponse(201, 'Razorpay payment order created successfully', paymentOrder)

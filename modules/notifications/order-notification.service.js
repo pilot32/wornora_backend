@@ -23,6 +23,14 @@ const buildItemsText = (order) => order.orderItems.map((item) => (
 
 const getCustomerEmail = (order) => order.shippingAddress?.email || order.billingAddress?.email;
 
+const getPaymentDescription = (order) => {
+    if (order.payment?.method === 'RAZORPAY') {
+        return 'Paid online with Razorpay';
+    }
+
+    return 'Cash on Delivery';
+};
+
 const sendCustomerOrderConfirmation = async (order) => {
     const email = getCustomerEmail(order);
     if (!email) {
@@ -33,12 +41,13 @@ const sendCustomerOrderConfirmation = async (order) => {
     const total = formatCurrency(order.grandTotal);
     const itemsHtml = buildItemsHtml(order);
     const itemsText = buildItemsText(order);
+    const paymentDescription = getPaymentDescription(order);
 
     await sendEmail({
         to: email,
         subject: `We received your order ${order.orderNumber}`,
-        html: `<h2>Thanks for your order, ${escapeHtml(order.shippingAddress?.fullName || 'there')}.</h2><p>Your order <strong>${escapeHtml(order.orderNumber)}</strong> has been placed.</p><ul>${itemsHtml}</ul><p><strong>Total: ${total}</strong></p><p>Payment method: Cash on Delivery</p>`,
-        text: `Thanks for your order. Order ${order.orderNumber} has been placed.\n\n${itemsText}\n\nTotal: ${total}\nPayment method: Cash on Delivery`,
+        html: `<h2>Thanks for your order, ${escapeHtml(order.shippingAddress?.fullName || 'there')}.</h2><p>Your order <strong>${escapeHtml(order.orderNumber)}</strong> has been placed.</p><ul>${itemsHtml}</ul><p><strong>Total: ${total}</strong></p><p>Payment: ${escapeHtml(paymentDescription)}</p>`,
+        text: `Thanks for your order. Order ${order.orderNumber} has been placed.\n\n${itemsText}\n\nTotal: ${total}\nPayment: ${paymentDescription}`,
     });
 };
 
@@ -55,12 +64,13 @@ const sendAdminNewOrderAlert = async (order) => {
     const customer = order.shippingAddress || {};
     const itemsHtml = buildItemsHtml(order);
     const itemsText = buildItemsText(order);
+    const paymentDescription = getPaymentDescription(order);
 
     await sendEmail({
         to: email,
         subject: `New order ${order.orderNumber}`,
-        html: `<h2>New COD order received</h2><p><strong>${escapeHtml(order.orderNumber)}</strong> — ${formatCurrency(order.grandTotal)}</p><p>Customer: ${escapeHtml(customer.fullName)} (${escapeHtml(customer.email)})</p><ul>${itemsHtml}</ul>${orderUrl ? `<p><a href="${escapeHtml(orderUrl)}">Open order in admin</a></p>` : ''}`,
-        text: `New COD order ${order.orderNumber}\nCustomer: ${customer.fullName} (${customer.email})\n\n${itemsText}\n\nTotal: ${formatCurrency(order.grandTotal)}${orderUrl ? `\nAdmin: ${orderUrl}` : ''}`,
+        html: `<h2>New order received</h2><p><strong>${escapeHtml(order.orderNumber)}</strong> — ${formatCurrency(order.grandTotal)}</p><p>Payment: ${escapeHtml(paymentDescription)}</p><p>Customer: ${escapeHtml(customer.fullName)} (${escapeHtml(customer.email)})</p><ul>${itemsHtml}</ul>${orderUrl ? `<p><a href="${escapeHtml(orderUrl)}">Open order in admin</a></p>` : ''}`,
+        text: `New order ${order.orderNumber}\nPayment: ${paymentDescription}\nCustomer: ${customer.fullName} (${customer.email})\n\n${itemsText}\n\nTotal: ${formatCurrency(order.grandTotal)}${orderUrl ? `\nAdmin: ${orderUrl}` : ''}`,
     });
 };
 

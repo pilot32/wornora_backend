@@ -203,9 +203,11 @@ describe('e-commerce API smoke flow', () => {
         expect(response.body.data.shipment.usedFallbackDimensions).toBe(false);
         const quotedDeliveryCharge = response.body.data.deliveryCharge;
 
+        const checkoutRequestId = `${marker}-checkout`;
         response = await request(app)
             .post('/api/orders')
             .set(auth(customerToken))
+            .set('Idempotency-Key', checkoutRequestId)
             .send({ shippingAddressId: addressId, paymentMethod: 'COD', deliveryNotes: `${marker} delivery` });
         expect(response.status).toBe(201);
         const firstOrder = response.body.data.order;
@@ -218,6 +220,15 @@ describe('e-commerce API smoke flow', () => {
         expect(firstOrder.deliveryCharges).toBe(quotedDeliveryCharge);
         expect(firstOrder.grandTotal).toBe(1500 + quotedDeliveryCharge);
         expect(firstOrder.shippingQuote.provider).toBe('mock');
+
+        response = await request(app)
+            .post('/api/orders')
+            .set(auth(customerToken))
+            .set('Idempotency-Key', checkoutRequestId)
+            .send({ shippingAddressId: addressId, paymentMethod: 'COD', deliveryNotes: `${marker} delivery` });
+        expect(response.status).toBe(201);
+        expect(response.body.data.order._id).toBe(firstOrderId);
+        expect(await Order.countDocuments({ userId: customer._id })).toBe(1);
 
         expect((await Product.findById(productId)).stock).toBe(3);
         expect((await Cart.findOne({ userId: customer._id })).items).toHaveLength(0);

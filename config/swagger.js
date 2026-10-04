@@ -127,6 +127,11 @@ addPaths(paths, '/api/shipping', [
     { path: '/quote', methods: ['post'], summary: 'Get a shipping quote for the current cart' }
 ], true, 'Shipping');
 
+addPaths(paths, '/api/payments', [
+    { path: '/razorpay/order', methods: ['post'], summary: 'Create a Razorpay payment order' },
+    { path: '/razorpay/verify', methods: ['post'], summary: 'Verify a Razorpay payment and place the order' }
+], true, 'Payments');
+
 addPaths(paths, '/api/admin', [
     { path: '/dashboard', methods: ['get'], summary: 'Get admin dashboard analytics' }
 ], true, 'Admin');

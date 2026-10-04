@@ -16,6 +16,7 @@ const reviewRoutes = require('./modules/reviews/review.route');
 const wishlistRoutes = require('./modules/wishlist/wishlist.route');
 const adminDashboardRoutes = require('./modules/admin/admin-dashboard.route');
 const shippingRoutes = require('./modules/shipping/shipping.route');
+const paymentRoutes = require('./modules/payments/payment.route');
 const errorMiddleware = require('./middlewares/error.middleware');
 const app = express();
 
@@ -61,6 +62,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/admin', adminDashboardRoutes);
 app.use('/api/shipping', shippingRoutes);
+app.use('/api/payments', paymentRoutes);
 app.use(errorMiddleware);
 
 module.exports = app;

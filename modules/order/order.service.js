@@ -8,6 +8,10 @@ const {
     validateCouponForCartService
 } = require('../coupons/coupon.service');
 const { quoteCartShipment } = require('../shipping/shipping.service');
+const {
+    createRazorpayOrder,
+    verifyRazorpayPaymentSignature
+} = require('../payments/razorpay.gateway');
 const ORDER_STATUS = require('../../constants/order.constants');
 const { PAYMENT_METHODS, PAYMENT_STATUS } = require('../../constants/payment.constants');
 const USER_ROLES = require('../../constants/roles');
@@ -18,6 +22,7 @@ const {
 } = require('../notifications/order-notification.service');
 
 const getEffectivePrice = (product) => product.discountedPrice ?? product.price;
+const roundCurrency = (value) => Math.round(value * 100) / 100;
 const STOCK_RESTORE_STATUSES = [ORDER_STATUS.PLACED, ORDER_STATUS.CONFIRMED];
 const FINAL_STATUSES = [ORDER_STATUS.CANCELLED, ORDER_STATUS.RETURNED];
 const STATUS_TRANSITIONS = {
@@ -110,6 +115,65 @@ const createUniqueOrderNumber = async () => {
     }
 
     throw new ApiError(500, 'Could not generate order number');
+};
+
+const getCheckoutDetails = async (userId, data, paymentMethod) => {
+    const [user, cart, shippingAddress, billingAddress] = await Promise.all([
+        User.findById(userId),
+        Cart.findOne({ userId }).populate('items.productId'),
+        getAddressByIdService(userId, data.shippingAddressId),
+        getAddressByIdService(userId, data.billingAddressId || data.shippingAddressId)
+    ]);
+
+    if (!user) {
+        throw new ApiError(404, 'User not found');
+    }
+
+    validateCartItems(cart);
+
+    const orderItems = buildOrderItems(cart);
+    const subTotal = orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+    let appliedCoupon = {
+        code: null,
+        discountType: null,
+        discountValue: null
+    };
+    let discountAmount = 0;
+
+    if (cart.appliedCoupon) {
+        const couponResult = await validateCouponForCartService(cart.appliedCoupon, subTotal);
+        appliedCoupon = {
+            code: couponResult.coupon.code,
+            discountType: couponResult.coupon.discountType,
+            discountValue: couponResult.coupon.discountValue
+        };
+        discountAmount = couponResult.discount;
+    }
+
+    const shippingQuote = await quoteCartShipment({
+        cart,
+        shippingAddress,
+        paymentMethod,
+        declaredValue: Math.max(subTotal - discountAmount, 0)
+    });
+    const deliveryCharges = shippingQuote.deliveryCharge;
+    const tax = 0;
+    const grandTotal = roundCurrency(Math.max(subTotal - discountAmount + deliveryCharges + tax, 0));
+
+    return {
+        user,
+        cart,
+        shippingAddress,
+        billingAddress,
+        orderItems,
+        subTotal,
+        appliedCoupon,
+        discountAmount,
+        shippingQuote,
+        deliveryCharges,
+        tax,
+        grandTotal
+    };
 };
 
 const createCodOrderService = async (userId, data) => {
@@ -216,6 +280,141 @@ const createCodOrderService = async (userId, data) => {
 
         notifyOrderPlaced(createdOrder);
         return createdOrder;
+    } finally {
+        await session.endSession();
+    }
+};
+
+const createRazorpayPaymentOrderService = async (userId, data) => {
+    const paymentMethod = PAYMENT_METHODS.RAZORPAY;
+    const checkout = await getCheckoutDetails(userId, data, paymentMethod);
+    const orderNumber = await createUniqueOrderNumber();
+    const amountInPaise = Math.round(checkout.grandTotal * 100);
+    const { razorpayOrder, keyId } = await createRazorpayOrder({
+        amount: amountInPaise,
+        receipt: orderNumber,
+        notes: {
+            wornoraOrderNumber: orderNumber,
+            customerId: userId.toString()
+        }
+    });
+
+    const order = await Order.create({
+        userId,
+        orderNumber,
+        orderItems: checkout.orderItems,
+        shippingAddress: buildAddressSnapshot(checkout.shippingAddress, checkout.user.email),
+        billingAddress: buildAddressSnapshot(checkout.billingAddress, checkout.user.email),
+        appliedCoupon: checkout.appliedCoupon,
+        subTotal: checkout.subTotal,
+        discountAmount: checkout.discountAmount,
+        deliveryCharges: checkout.deliveryCharges,
+        shippingQuote: buildShippingQuoteSnapshot(checkout.shippingQuote),
+        tax: checkout.tax,
+        grandTotal: checkout.grandTotal,
+        orderStatus: ORDER_STATUS.PENDING,
+        payment: {
+            method: PAYMENT_METHODS.RAZORPAY,
+            status: PAYMENT_STATUS.PENDING,
+            paymentDetails: {
+                razorpayOrderId: razorpayOrder.id,
+                amount: amountInPaise,
+                currency: razorpayOrder.currency
+            }
+        },
+        deliveryNotes: data.deliveryNotes || ''
+    });
+
+    return {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        amount: amountInPaise,
+        currency: razorpayOrder.currency,
+        razorpayOrderId: razorpayOrder.id,
+        keyId,
+        customer: {
+            name: checkout.user.name,
+            email: checkout.user.email,
+            contact: checkout.shippingAddress.phone
+        }
+    };
+};
+
+const verifyRazorpayPaymentService = async (userId, data) => {
+    const paymentOrder = await Order.findOne({ _id: data.orderId, userId });
+
+    if (!paymentOrder) {
+        throw new ApiError(404, 'Payment order not found');
+    }
+
+    if (
+        paymentOrder.payment.method !== PAYMENT_METHODS.RAZORPAY
+        || paymentOrder.payment.status !== PAYMENT_STATUS.PENDING
+        || paymentOrder.orderStatus !== ORDER_STATUS.PENDING
+    ) {
+        throw new ApiError(400, 'This payment order cannot be verified');
+    }
+
+    const expectedRazorpayOrderId = paymentOrder.payment.paymentDetails?.razorpayOrderId;
+    if (data.razorpayOrderId !== expectedRazorpayOrderId) {
+        throw new ApiError(400, 'Razorpay order does not match the payment order');
+    }
+
+    const isValid = verifyRazorpayPaymentSignature(data);
+    if (!isValid) {
+        throw new ApiError(400, 'Razorpay payment signature verification failed');
+    }
+
+    const session = await mongoose.startSession();
+
+    try {
+        let verifiedOrder;
+
+        await session.withTransaction(async () => {
+            const order = await Order.findOne({ _id: data.orderId, userId }).session(session);
+            if (!order || order.payment.status !== PAYMENT_STATUS.PENDING || order.orderStatus !== ORDER_STATUS.PENDING) {
+                throw new ApiError(400, 'This payment order has already been processed');
+            }
+
+            for (const item of order.orderItems) {
+                const updateResult = await Product.updateOne(
+                    {
+                        _id: item.productId,
+                        stock: { $gte: item.quantity },
+                        isActive: true
+                    },
+                    { $inc: { stock: -item.quantity } },
+                    { session }
+                );
+
+                if (updateResult.modifiedCount !== 1) {
+                    throw new ApiError(400, `${item.name} is no longer available in the requested quantity`);
+                }
+            }
+
+            order.orderStatus = ORDER_STATUS.PLACED;
+            order.payment.status = PAYMENT_STATUS.PAID;
+            order.payment.transactionId = data.razorpayPaymentId;
+            order.payment.paidAt = new Date();
+            order.payment.paymentDetails = {
+                ...order.payment.paymentDetails,
+                razorpayOrderId: data.razorpayOrderId,
+                razorpayPaymentId: data.razorpayPaymentId,
+                razorpaySignatureVerified: true
+            };
+            await order.save({ session });
+
+            await Cart.updateOne(
+                { userId },
+                { items: [], appliedCoupon: null },
+                { session }
+            );
+
+            verifiedOrder = order;
+        });
+
+        notifyOrderPlaced(verifiedOrder);
+        return verifiedOrder;
     } finally {
         await session.endSession();
     }
@@ -422,6 +621,8 @@ const cancelMyOrderService = async (userId, id, data) => {
 
 module.exports = {
     createCodOrderService,
+    createRazorpayPaymentOrderService,
+    verifyRazorpayPaymentService,
     getMyOrdersService,
     getOrderByIdService,
     getAllOrdersService,

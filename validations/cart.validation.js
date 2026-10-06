@@ -1,6 +1,11 @@
 const Joi = require('joi');
+const selectionFields = {
+    selectedSize: Joi.string().trim().max(100).allow('').optional(),
+    selectedColor: Joi.string().trim().max(100).allow('').optional()
+};
 
 const addToCartSchema = Joi.object({
+    ...selectionFields,
     productId: Joi.string()
         .pattern(/^[0-9a-fA-F]{24}$/)
         .required()
@@ -20,6 +25,7 @@ const addToCartSchema = Joi.object({
 });
 
 const updateQuantitySchema = Joi.object({
+    ...selectionFields,
     quantity: Joi.number()
         .integer()
         .min(1)
@@ -53,6 +59,7 @@ const applyCouponSchema = Joi.object({
 });
 
 module.exports = {
+    cartSelectionSchema: Joi.object(selectionFields),
     addToCartSchema,
     updateQuantitySchema,
     productIdParamSchema,

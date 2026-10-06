@@ -68,6 +68,8 @@ const buildOrderItems = (cart) => cart.items.map((item) => {
         unitPrice,
         image: product.images?.[0] || '',
         quantity: item.quantity,
+        selectedSize: item.selectedSize || '',
+        selectedColor: item.selectedColor || '',
         totalPrice: unitPrice * item.quantity
     };
 });
@@ -88,6 +90,7 @@ const validateCartItems = (cart) => {
         throw new ApiError(400, 'Cart is empty');
     }
 
+    const productQuantities = new Map();
     cart.items.forEach((item) => {
         const product = item.productId;
 
@@ -99,7 +102,13 @@ const validateCartItems = (cart) => {
             throw new ApiError(400, `${product.name} is no longer available`);
         }
 
-        if (product.stock < item.quantity) {
+        if (product.sizes?.length && !product.sizes.includes(item.selectedSize)) {
+            throw new ApiError(400, `Choose an available size for ${product.name} before checkout`);
+        }
+        const productKey = product._id.toString();
+        const totalQuantity = (productQuantities.get(productKey) || 0) + item.quantity;
+        productQuantities.set(productKey, totalQuantity);
+        if (product.stock < totalQuantity) {
             throw new ApiError(400, `Only ${product.stock} item(s) of ${product.name} are in stock`);
         }
     });

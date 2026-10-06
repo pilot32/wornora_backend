@@ -1,11 +1,12 @@
 const Cart = require('./cart.model');
 const Product = require('../products/products.model');
+const { sameSelection, selectCartItem } = require('./cart-selection');
 const {
     validateCouponForCartService,
     calculateCouponDiscount
 } = require('../coupons/coupon.service');
 
-const PRODUCT_POPULATE_FIELDS = 'name price discountedPrice images slug stock isActive';
+const PRODUCT_POPULATE_FIELDS = 'name price discountedPrice images slug stock isActive sizes colors';
 
 const getEffectivePrice = (product) => {
     if (!product) return 0;
@@ -109,7 +110,7 @@ const addToCart = async (req,res) => {
     try{
         const userId = req.user.userId;
         const{
-            productId,quantity =1
+            productId,quantity =1, selectedSize = '', selectedColor = ''
         } = req.body;
         /**
          * Product availability and stock validation
@@ -121,11 +122,26 @@ const addToCart = async (req,res) => {
         if(!product.isActive){
             return res.status(400).json({message: "Product is not available"});
         }
+        if (product.sizes?.length && !product.sizes.includes(selectedSize)) {
+            return res.status(400).json({ message: 'Please select an available size' });
+        }
+        if (selectedSize && !product.sizes?.includes(selectedSize)) {
+            return res.status(400).json({ message: 'Selected size is not available' });
+        }
+        if (selectedColor && !product.colors?.some((color) => color.name === selectedColor)) {
+            return res.status(400).json({ message: 'Selected colour is not available' });
+        }
         if(product.stock < quantity){
             return res.status(400).json({message: "Insufficient stock"});
         }
         let cart = await getOrCreateCart(userId);
-        const existingItemIndex = cart.items.findIndex((item)=>  item.productId.toString() === productId);
+        const selection = { selectedSize, selectedColor };
+        const productQuantity = cart.items.reduce((total, item) =>
+            total + (item.productId.toString() === productId ? item.quantity : 0), 0);
+        if (productQuantity + quantity > product.stock) {
+            return res.status(400).json({ message: `Cannot add to cart. Only ${product.stock} items in stock.` });
+        }
+        const existingItemIndex = cart.items.findIndex((item)=> item.productId.toString() === productId && sameSelection(item, selection));
         const productPrice = getEffectivePrice(product);
         
         if(existingItemIndex >= 0){
@@ -139,6 +155,8 @@ const addToCart = async (req,res) => {
         else{
             cart.items.push({
                 productId,
+                selectedSize,
+                selectedColor,
                 quantity,
                 priceAddition: productPrice,
             });
@@ -184,9 +202,9 @@ const updateQuantity = async (req,res) => {
         if(!cart){
             return res.status(404).json({message: "Cart not found"});
         }
-        const item = cart.items.find(
-            (i) => i.productId.toString() === productId
-        );
+        let item;
+        try { item = selectCartItem(cart.items, productId, req.body); }
+        catch (error) { return res.status(400).json({ message: error.message }); }
         if(!item){
             return res.status(404).json({message: "Product not found in cart"});
         }
@@ -198,7 +216,9 @@ const updateQuantity = async (req,res) => {
         if(!product.isActive){
             return res.status(400).json({message: "Product is not available"});
         }
-        if(product.stock < quantity){
+        const otherQuantity = cart.items.reduce((total, line) =>
+            total + (line !== item && line.productId.toString() === productId ? line.quantity : 0), 0);
+        if(product.stock < quantity + otherQuantity){
             return res.status(400).json({message: `Cannot update quantity. Only ${product.stock} items in stock.`});
         }
 
@@ -228,14 +248,13 @@ const removeFromCart = async (req, res) => {
             return res.status(404).json({ message: 'Cart not found' });
         }
 
-        const initialLength = cart.items.length;
-        cart.items = cart.items.filter(
-            (item) => item.productId.toString() !== productId
-        );
-
-        if (cart.items.length === initialLength) {
+        let selectedItem;
+        try { selectedItem = selectCartItem(cart.items, productId, req.query); }
+        catch (error) { return res.status(400).json({ message: error.message }); }
+        if (!selectedItem) {
             return res.status(404).json({ message: 'Item not found in cart' });
         }
+        cart.items = cart.items.filter((item) => item !== selectedItem);
 
         await cart.save();
         const response = await buildCartResponse(cart, userId);

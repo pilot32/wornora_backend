@@ -14,7 +14,9 @@ const Cart = require('../modules/cart/cart.model');
 const Coupon = require('../modules/coupons/coupon.model');
 const Order = require('../modules/order/order.model');
 
-const mongoUri = process.env.MONGO_TEST_URI || process.env.MONGO_DB_URI;
+// This suite creates and deletes database records. Never fall back to the
+// application's database URI: a missing test setting must fail safely.
+const mongoUri = process.env.MONGO_TEST_URI;
 const marker = `SMOKE-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const customerPassword = 'SmokeCustomer123!';
 const adminPassword = 'SmokeAdmin123!';
@@ -58,7 +60,7 @@ const cleanup = async () => {
 
 beforeAll(async () => {
     if (!mongoUri) {
-        throw new Error('Full API smoke tests require MONGO_TEST_URI or MONGO_DB_URI');
+        throw new Error('Full API smoke tests require MONGO_TEST_URI. Refusing to use MONGO_DB_URI.');
     }
 
     await mongoose.connect(mongoUri);

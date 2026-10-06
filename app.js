@@ -28,6 +28,7 @@ const allowedOrigins = (
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+allowedOrigins.push('https://wornora-git-dev-akshat-ojhas-projects.vercel.app');
 const allowAllOrigins = allowedOrigins.includes('*');
 
 app.use(cors({

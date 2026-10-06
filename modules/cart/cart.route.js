@@ -12,7 +12,8 @@ const {
     addToCartSchema,
     updateQuantitySchema,
     productIdParamSchema,
-    applyCouponSchema
+    applyCouponSchema,
+    cartSelectionSchema
 } = require('../../validations/cart.validation');
 const authMiddleware = require('../../middlewares/auth.middleware');
 const validationMiddleware = require('../../middlewares/validation.middleware');
@@ -52,6 +53,7 @@ router.patch('/:productId',
 router.delete('/:productId',
     authMiddleware,
     validationMiddleware(productIdParamSchema, 'params'),
+    validationMiddleware(cartSelectionSchema, 'query'),
     removeFromCart
 );
 

@@ -5,6 +5,8 @@ const mongoose = require('mongoose');
  * Schema for the items(products) what will the items array of the cart collection will have
  */
 const cartItemSchema = new mongoose.Schema({
+    selectedSize: { type: String, trim: true, default: '' },
+    selectedColor: { type: String, trim: true, default: '' },
     productId:{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Product',

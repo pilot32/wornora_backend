@@ -93,6 +93,8 @@ const paymentSchema = new mongoose.Schema({
 });
 
 const orderItemSchema = new mongoose.Schema({
+    selectedSize: { type: String, default: '' },
+    selectedColor: { type: String, default: '' },
     productId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Product',
